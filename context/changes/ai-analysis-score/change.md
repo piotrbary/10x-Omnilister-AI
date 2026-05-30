@@ -2,7 +2,7 @@
 change_id: ai-analysis-score
 roadmap_id: S-02
 title: "Analiza AI — kategoria, cechy i quality score per wymiar"
-status: implementing
+status: implemented
 created: 2026-05-31
 updated: 2026-06-01
 reviewed: 2026-05-31

@@ -565,14 +565,14 @@ planned.
 
 #### Automated
 
-- [x] 4.1 Type checking passes: `npm run typecheck`
+- [x] 4.1 Type checking passes: `npm run typecheck` — 49c86ca
 
 #### Manual
 
-- [x] 4.2 Select 2 photos → Analyze → score grid shows 8 dimensions + sales readiness badge
-- [x] 4.3 Already-scored photo shows cached result without new API call
-- [x] 4.4 No photos selected → Analyze button disabled
-- [x] 4.5 AI failure → per-photo error state + Retry button; other photos unaffected
-- [x] 4.6 Category dropdown change → DB updated, visible without reload
-- [x] 4.7 Features textarea save → persists after reload
-- [x] 4.8 Mobile 375 px: score grid scrollable, controls tappable
+- [x] 4.2 Select 2 photos → Analyze → score grid shows 8 dimensions + sales readiness badge — 49c86ca
+- [x] 4.3 Already-scored photo shows cached result without new API call — 49c86ca
+- [x] 4.4 No photos selected → Analyze button disabled — 49c86ca
+- [x] 4.5 AI failure → per-photo error state + Retry button; other photos unaffected — 49c86ca
+- [x] 4.6 Category dropdown change → DB updated, visible without reload — 49c86ca
+- [x] 4.7 Features textarea save → persists after reload — 49c86ca
+- [x] 4.8 Mobile 375 px: score grid scrollable, controls tappable — 49c86ca

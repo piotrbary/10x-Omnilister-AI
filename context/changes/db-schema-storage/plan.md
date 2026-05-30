@@ -540,15 +540,15 @@ The production `supabase db push` command applies any unapplied migrations. Sinc
 
 #### Automated
 
-- [x] 3.1 `supabase db reset` applies full migration without errors
-- [x] 3.2 All 7 indexes present in `pg_indexes`
-- [x] 3.3 Both buckets present in `storage.buckets`
-- [x] 3.4 9 style presets seeded with `user_id IS NULL AND is_public = true`
-- [x] 3.5 `src/types/database.generated.ts` exists and `npm run typecheck` passes
+- [x] 3.1 `supabase db reset` applies full migration without errors — 891d507
+- [x] 3.2 All 7 indexes present in `pg_indexes` — 891d507
+- [x] 3.3 Both buckets present in `storage.buckets` — 891d507
+- [x] 3.4 9 style presets seeded with `user_id IS NULL AND is_public = true` — 891d507
+- [x] 3.5 `src/types/database.generated.ts` exists and `npm run typecheck` passes — 891d507
 
 #### Manual
 
-- [x] 3.6 Both buckets appear as private in Supabase Studio
-- [x] 3.7 Storage RLS: upload to own path succeeds; upload to other user's path is blocked
-- [x] 3.8 All 9 style presets have correct categories and no-distortion guardrail in prompt
-- [x] 3.9 Generated types file contains Tables<'profiles'> and Tables<'transformations'> with expected shapes
+- [x] 3.6 Both buckets appear as private in Supabase Studio — 891d507
+- [x] 3.7 Storage RLS: upload to own path succeeds; upload to other user's path is blocked — 891d507
+- [x] 3.8 All 9 style presets have correct categories and no-distortion guardrail in prompt — 891d507
+- [x] 3.9 Generated types file contains Tables<'profiles'> and Tables<'transformations'> with expected shapes — 891d507

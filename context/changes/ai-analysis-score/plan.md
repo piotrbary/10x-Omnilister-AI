@@ -541,25 +541,25 @@ planned.
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test` (or `npx vitest run`)
-- [x] 2.2 Type checking passes: `npm run typecheck`
+- [x] 2.1 Unit tests pass: `npm test` (or `npx vitest run`) — c63a4d7
+- [x] 2.2 Type checking passes: `npm run typecheck` — c63a4d7
 
 #### Manual
 
-- [x] 2.3 `scorePhoto()` called with real photo URL returns valid `QualityScoreSnapshot` (scores 0–10, correct `is_sales_ready`)
-- [x] 2.4 `analyzeObject()` with real photo IDs: new `quality_scores` row exists, `objects.category` and `objects.features_text` populated
+- [x] 2.3 `scorePhoto()` called with real photo URL returns valid `QualityScoreSnapshot` (scores 0–10, correct `is_sales_ready`) — c63a4d7
+- [x] 2.4 `analyzeObject()` with real photo IDs: new `quality_scores` row exists, `objects.category` and `objects.features_text` populated — c63a4d7
 
 ### Phase 3: API Routes
 
 #### Automated
 
-- [ ] 3.1 Type checking passes: `npm run typecheck`
+- [x] 3.1 Type checking passes: `npm run typecheck`
 
 #### Manual
 
-- [ ] 3.2 POST `/api/objects/[objectId]/analyze` returns expected score shape
-- [ ] 3.3 GET `/api/quality-scores/photo/[photoId]` returns stored score; 404 for unscored photo
-- [ ] 3.4 PATCH `/api/objects/[objectId]/category` updates DB row
+- [x] 3.2 POST `/api/objects/[objectId]/analyze` returns expected score shape
+- [x] 3.3 GET `/api/quality-scores/photo/[photoId]` returns stored score; 404 for unscored photo
+- [x] 3.4 PATCH `/api/objects/[objectId]/category` updates DB row
 
 ### Phase 4: Analysis UI Component
 

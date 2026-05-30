@@ -510,31 +510,31 @@ The production `supabase db push` command applies any unapplied migrations. Sinc
 
 #### Automated
 
-- [x] 1.1 `supabase db reset` completes without SQL errors
-- [x] 1.2 All 6 tables present in `pg_tables`
-- [x] 1.3 All 4 functions present in `information_schema.routines`
-- [x] 1.4 CHECK constraint enforced on `profiles.storage_used_bytes`
-- [x] 1.5 Profile auto-create trigger exists on auth.users (information_schema.triggers query)
+- [x] 1.1 `supabase db reset` completes without SQL errors — d032e47
+- [x] 1.2 All 6 tables present in `pg_tables` — d032e47
+- [x] 1.3 All 4 functions present in `information_schema.routines` — d032e47
+- [x] 1.4 CHECK constraint enforced on `profiles.storage_used_bytes` — d032e47
+- [x] 1.5 Profile auto-create trigger exists on auth.users (information_schema.triggers query) — d032e47
 
 #### Manual
 
-- [x] 1.6 `\d profiles` shows all expected columns and the CHECK constraint
-- [x] 1.7 Photo INSERT increments `profiles.storage_used_bytes`; DELETE decrements it
-- [x] 1.8 Transformation status → 'saved' increments `profiles.storage_used_bytes`
-- [x] 1.9 Sign-up test user; confirm profiles row auto-created with storage_used_bytes = 0
+- [x] 1.6 `\d profiles` shows all expected columns and the CHECK constraint — d032e47
+- [x] 1.7 Photo INSERT increments `profiles.storage_used_bytes`; DELETE decrements it — d032e47
+- [x] 1.8 Transformation status → 'saved' increments `profiles.storage_used_bytes` — d032e47
+- [x] 1.9 Sign-up test user; confirm profiles row auto-created with storage_used_bytes = 0 — d032e47
 
 ### Phase 2: RLS Policies
 
 #### Automated
 
-- [ ] 2.1 `supabase db reset` completes cleanly with RLS section appended
-- [ ] 2.2 All 6 tables show `rowsecurity = true` in `pg_tables`
-- [ ] 2.3 Policy count correct: 1 policy each for 5 owner-only tables; 4 policies for `styles`
+- [x] 2.1 `supabase db reset` completes cleanly with RLS section appended
+- [x] 2.2 All 6 tables show `rowsecurity = true` in `pg_tables`
+- [x] 2.3 Policy count correct: 1 policy each for 5 owner-only tables; 4 policies for `styles`
 
 #### Manual
 
-- [ ] 2.4 Unauthenticated SELECT on `objects` returns 0 rows (not an error)
-- [ ] 2.5 User A cannot see User B's objects
+- [x] 2.4 Unauthenticated SELECT on `objects` returns 0 rows (not an error)
+- [x] 2.5 User A cannot see User B's objects
 
 ### Phase 3: Indexes, Storage Buckets & Seeds
 

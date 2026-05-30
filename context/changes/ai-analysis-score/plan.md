@@ -553,26 +553,26 @@ planned.
 
 #### Automated
 
-- [x] 3.1 Type checking passes: `npm run typecheck`
+- [x] 3.1 Type checking passes: `npm run typecheck` — 0518fe4
 
 #### Manual
 
-- [x] 3.2 POST `/api/objects/[objectId]/analyze` returns expected score shape
-- [x] 3.3 GET `/api/quality-scores/photo/[photoId]` returns stored score; 404 for unscored photo
-- [x] 3.4 PATCH `/api/objects/[objectId]/category` updates DB row
+- [x] 3.2 POST `/api/objects/[objectId]/analyze` returns expected score shape — 0518fe4
+- [x] 3.3 GET `/api/quality-scores/photo/[photoId]` returns stored score; 404 for unscored photo — 0518fe4
+- [x] 3.4 PATCH `/api/objects/[objectId]/category` updates DB row — 0518fe4
 
 ### Phase 4: Analysis UI Component
 
 #### Automated
 
-- [ ] 4.1 Type checking passes: `npm run typecheck`
+- [x] 4.1 Type checking passes: `npm run typecheck`
 
 #### Manual
 
-- [ ] 4.2 Select 2 photos → Analyze → score grid shows 8 dimensions + sales readiness badge
-- [ ] 4.3 Already-scored photo shows cached result without new API call
-- [ ] 4.4 No photos selected → Analyze button disabled
-- [ ] 4.5 AI failure → per-photo error state + Retry button; other photos unaffected
-- [ ] 4.6 Category dropdown change → DB updated, visible without reload
-- [ ] 4.7 Features textarea save → persists after reload
-- [ ] 4.8 Mobile 375 px: score grid scrollable, controls tappable
+- [x] 4.2 Select 2 photos → Analyze → score grid shows 8 dimensions + sales readiness badge
+- [x] 4.3 Already-scored photo shows cached result without new API call
+- [x] 4.4 No photos selected → Analyze button disabled
+- [x] 4.5 AI failure → per-photo error state + Retry button; other photos unaffected
+- [x] 4.6 Category dropdown change → DB updated, visible without reload
+- [x] 4.7 Features textarea save → persists after reload
+- [x] 4.8 Mobile 375 px: score grid scrollable, controls tappable

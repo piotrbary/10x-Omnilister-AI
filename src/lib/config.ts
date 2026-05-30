@@ -1,7 +1,11 @@
 // Application-level constants. Edit here; do not scatter magic numbers across the codebase.
 
 export const storageConfig = {
-  /** Maximum total storage per client account (original + transformed photos combined). */
+  /**
+   * Maximum total storage per client account (original + transformed photos combined).
+   * WARNING: Changing this value requires a new Supabase migration to update the
+   * `storage_limit` CHECK constraint on the `profiles` table. See docs/reference/contract-surfaces.md.
+   */
   Max_Client_Repository: 100 * 1024 * 1024, // 100 MB in bytes
 
   /** Human-readable label shown in UI and error messages. */
@@ -12,15 +16,24 @@ export const storageConfig = {
 
   /** Maximum size of a single uploaded photo (10 MB). */
   maxSinglePhotoBytes: 10 * 1024 * 1024,
+
+  /** Maximum number of photos allowed per object. */
+  maxPhotosPerObject: 10,
 } as const;
 
 export const aiConfig = {
   /**
-   * OpenAI API must be called with zero-data-retention headers where supported.
-   * Photos sent to OpenAI are processed in-memory only — OpenAI must not persist
-   * them after the API response is returned. Verify via OpenAI Enterprise ZDR policy.
+   * AI requests are routed through OpenRouter (https://openrouter.ai/api/v1).
+   * Model names use the OpenRouter provider-prefix format: "openai/gpt-image-1".
+   * API key: OPENROUTER_API_KEY (Workers Secret / .dev.vars).
+   * Data handling: photos are forwarded to the underlying model provider by OpenRouter.
+   * Zero-data-retention must be negotiated per the underlying provider's policy.
    */
-  openaiZeroDataRetention: true,
+  provider: "openrouter" as const,
+  baseUrl: "https://openrouter.ai/api/v1",
+
+  /** OpenRouter model ID for full-quality image editing. */
+  transformationModel: "openai/gpt-image-1",
 
   /** Timeout for full AI transformation response (ms). Matches NFR ≤ 60 s. */
   transformationTimeoutMs: 60_000,
@@ -28,7 +41,7 @@ export const aiConfig = {
   /** Timeout for draft/low-res preview response (ms). Matches NFR ≤ 5 s. */
   draftPreviewTimeoutMs: 5_000,
 
-  /** Maximum retries on transient OpenAI API errors before surfacing to user. */
+  /** Maximum retries on transient API errors before surfacing to user. */
   maxRetries: 2,
 } as const;
 

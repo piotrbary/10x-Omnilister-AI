@@ -42,7 +42,7 @@ export type Database = {
           name: string
           updated_at: string
           user_id: string
-          version: string
+          version: number
         }
         Insert: {
           category?: string | null
@@ -51,7 +51,7 @@ export type Database = {
           name: string
           updated_at?: string
           user_id: string
-          version?: string
+          version?: number
         }
         Update: {
           category?: string | null
@@ -60,7 +60,7 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
-          version?: string
+          version?: number
         }
         Relationships: []
       }

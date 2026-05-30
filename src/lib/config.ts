@@ -43,6 +43,9 @@ export const aiConfig = {
 
   /** Maximum retries on transient API errors before surfacing to user. */
   maxRetries: 2,
+
+  /** OpenRouter model ID for GPT-4o Vision used in photo quality scoring (S-02). */
+  visionModel: "openai/gpt-4o",
 } as const;
 
 export const scoringConfig = {
@@ -60,6 +63,17 @@ export const scoringConfig = {
 
   /** Object categories used for category-specific scoring models. */
   categories: ["car", "real-estate", "item"] as const,
+
+  /**
+   * Per-category dimension weights for overall score calculation.
+   * All dimensions currently equal weight (1/8 = 0.125).
+   * Calibrate per category before public launch.
+   */
+  categoryWeights: {
+    car:           { sharpness:1, lighting:1, background:1, object_features:1, damage_defects:1, labels:1, angle_coverage:1, sales_readiness:1 },
+    "real-estate": { sharpness:1, lighting:1, background:1, object_features:1, damage_defects:1, labels:1, angle_coverage:1, sales_readiness:1 },
+    item:          { sharpness:1, lighting:1, background:1, object_features:1, damage_defects:1, labels:1, angle_coverage:1, sales_readiness:1 },
+  },
 } as const;
 
 export type ObjectCategory = (typeof scoringConfig.categories)[number];

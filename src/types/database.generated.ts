@@ -38,6 +38,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          features_text: string | null
           id: string
           name: string
           updated_at: string
@@ -47,6 +48,7 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string
+          features_text?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -56,6 +58,7 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string
+          features_text?: string | null
           id?: string
           name?: string
           updated_at?: string
@@ -204,8 +207,10 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          is_reported: boolean
           name: string
           prompt: string
+          reporter_user_id: string | null
           updated_at: string
           usage_count: number
           user_id: string | null
@@ -216,8 +221,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          is_reported?: boolean
           name: string
           prompt: string
+          reporter_user_id?: string | null
           updated_at?: string
           usage_count?: number
           user_id?: string | null
@@ -228,8 +235,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          is_reported?: boolean
           name?: string
           prompt?: string
+          reporter_user_id?: string | null
           updated_at?: string
           usage_count?: number
           user_id?: string | null
@@ -316,7 +325,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_style_usage_count: {
+        Args: { p_style_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -353,31 +353,31 @@ The `original-photos` bucket is being changed from private to public. Any existi
 
 #### Automated
 
-- [x] 1.1 Migration applies without error (npx supabase db push)
-- [x] 1.2 TypeScript compiles without errors (npm run build or npx tsc --noEmit)
-- [x] 1.3 storageConfig.maxPhotosPerObject importable from src/lib/config.ts
+- [x] 1.1 Migration applies without error (npx supabase db push) — c11e54a
+- [x] 1.2 TypeScript compiles without errors (npm run build or npx tsc --noEmit) — c11e54a
+- [x] 1.3 storageConfig.maxPhotosPerObject importable from src/lib/config.ts — c11e54a
 
 #### Manual
 
-- [x] 1.4 original-photos bucket Public toggle is ON in Supabase dashboard
-- [x] 1.5 database.generated.ts has version: number for objects table
+- [x] 1.4 original-photos bucket Public toggle is ON in Supabase dashboard — c11e54a
+- [x] 1.5 database.generated.ts has version: number for objects table — c11e54a
 
 ### Phase 2: API Routes
 
 #### Automated
 
-- [ ] 2.1 TypeScript compiles (npm run build)
-- [ ] 2.2 Linting passes (npm run lint)
+- [x] 2.1 TypeScript compiles (npm run build)
+- [x] 2.2 Linting passes (npm run lint)
 
 #### Manual
 
-- [ ] 2.3 POST /api/objects returns 201 with object record
-- [ ] 2.4 GET /api/objects returns object in list
-- [ ] 2.5 POST upload-url returns signed URL
-- [ ] 2.6 Browser PUT to signed URL succeeds (Supabase returns 200)
-- [ ] 2.7 POST /api/objects/[id]/photos returns 201 with photo containing valid originalUrl
-- [ ] 2.8 originalUrl loads photo in browser (bucket is public)
-- [ ] 2.9 DELETE photo removes it from list
+- [x] 2.3 POST /api/objects returns 201 with object record
+- [x] 2.4 GET /api/objects returns object in list
+- [x] 2.5 POST upload-url returns signed URL
+- [x] 2.6 Browser PUT to signed URL succeeds (Supabase returns 200)
+- [x] 2.7 POST /api/objects/[id]/photos returns 201 with photo containing valid originalUrl
+- [x] 2.8 originalUrl loads photo in browser (bucket is public)
+- [x] 2.9 DELETE photo removes it from list
 
 ### Phase 3: Frontend — Pages and Components
 

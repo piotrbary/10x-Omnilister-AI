@@ -1,0 +1,77 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+import PhotoGallery from "@/components/objects/PhotoGallery";
+import type { ObjectRecord, PhotoRecord } from "@/types/objects";
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect("/auth/signin");
+}
+
+const { objectId } = Astro.params;
+if (!objectId) {
+  return Astro.redirect("/objects");
+}
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  return Astro.redirect("/objects");
+}
+
+const { data: objectData, error: objectError } = await supabase
+  .from("objects")
+  .select("id, name, version, category, created_at")
+  .eq("id", objectId)
+  .eq("user_id", user.id)
+  .single();
+
+if (objectError) {
+  return Astro.redirect("/objects");
+}
+
+const object: ObjectRecord = {
+  id: objectData.id,
+  name: objectData.name,
+  version: objectData.version,
+  category: objectData.category,
+  createdAt: objectData.created_at,
+};
+
+const { data: photosData } = await supabase
+  .from("photos")
+  .select("id, object_id, original_url, file_size_bytes, mime_type, created_at")
+  .eq("object_id", objectId)
+  .order("created_at", { ascending: true });
+
+const photos: PhotoRecord[] = (photosData ?? []).map((row) => ({
+  id: row.id,
+  objectId: row.object_id,
+  originalUrl: row.original_url,
+  fileSizeBytes: row.file_size_bytes,
+  mimeType: row.mime_type,
+  createdAt: row.created_at,
+}));
+---
+
+<Layout title={object.name}>
+  <div class="bg-cosmic min-h-screen p-6 text-white">
+    <div class="mx-auto max-w-4xl">
+      <div class="mb-8 flex items-center gap-4">
+        <a
+          href="/objects"
+          class="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/20"
+        >
+          ← Back
+        </a>
+        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+          {object.name}
+        </h1>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-xl">
+        <PhotoGallery objectId={objectId} initialPhotos={photos} client:load />
+      </div>
+    </div>
+  </div>
+</Layout>

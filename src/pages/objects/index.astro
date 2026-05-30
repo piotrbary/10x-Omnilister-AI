@@ -1,0 +1,79 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+import CreateObjectForm from "@/components/objects/CreateObjectForm";
+import type { ObjectRecord } from "@/types/objects";
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect("/auth/signin");
+}
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+let objects: ObjectRecord[] = [];
+
+if (supabase) {
+  const { data } = await supabase
+    .from("objects")
+    .select("id, name, version, category, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (data) {
+    objects = data.map((row) => ({
+      id: row.id,
+      name: row.name,
+      version: row.version,
+      category: row.category,
+      createdAt: row.created_at,
+    }));
+  }
+}
+---
+
+<Layout title="My Objects">
+  <div class="bg-cosmic min-h-screen p-6 text-white">
+    <div class="mx-auto max-w-4xl">
+      <div class="mb-8 flex items-center justify-between">
+        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+          My Objects
+        </h1>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-blue-100/60">{user.email}</span>
+          <form method="POST" action="/api/auth/signout">
+            <button
+              type="submit"
+              class="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/20"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <CreateObjectForm client:load />
+      </div>
+
+      {
+        objects.length === 0 ? (
+          <div class="rounded-2xl border border-white/10 bg-white/10 p-12 text-center backdrop-blur-xl">
+            <p class="text-blue-100/60">No objects yet — create your first one above.</p>
+          </div>
+        ) : (
+          <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {objects.map((obj) => (
+              <a
+                href={`/objects/${obj.id}`}
+                class="group rounded-xl border border-white/10 bg-white/10 p-5 backdrop-blur-xl transition-colors hover:bg-white/20"
+              >
+                <p class="font-semibold group-hover:text-purple-200">{obj.name}</p>
+                <p class="mt-1 text-xs text-blue-100/50">{new Date(obj.createdAt).toLocaleDateString()}</p>
+              </a>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </div>
+</Layout>

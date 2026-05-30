@@ -366,35 +366,35 @@ The `original-photos` bucket is being changed from private to public. Any existi
 
 #### Automated
 
-- [x] 2.1 TypeScript compiles (npm run build)
-- [x] 2.2 Linting passes (npm run lint)
+- [x] 2.1 TypeScript compiles (npm run build) — 4ad5ddb
+- [x] 2.2 Linting passes (npm run lint) — 4ad5ddb
 
 #### Manual
 
-- [x] 2.3 POST /api/objects returns 201 with object record
-- [x] 2.4 GET /api/objects returns object in list
-- [x] 2.5 POST upload-url returns signed URL
-- [x] 2.6 Browser PUT to signed URL succeeds (Supabase returns 200)
-- [x] 2.7 POST /api/objects/[id]/photos returns 201 with photo containing valid originalUrl
-- [x] 2.8 originalUrl loads photo in browser (bucket is public)
-- [x] 2.9 DELETE photo removes it from list
+- [x] 2.3 POST /api/objects returns 201 with object record — 4ad5ddb
+- [x] 2.4 GET /api/objects returns object in list — 4ad5ddb
+- [x] 2.5 POST upload-url returns signed URL — 4ad5ddb
+- [x] 2.6 Browser PUT to signed URL succeeds (Supabase returns 200) — 4ad5ddb
+- [x] 2.7 POST /api/objects/[id]/photos returns 201 with photo containing valid originalUrl — 4ad5ddb
+- [x] 2.8 originalUrl loads photo in browser (bucket is public) — 4ad5ddb
+- [x] 2.9 DELETE photo removes it from list — 4ad5ddb
 
 ### Phase 3: Frontend — Pages and Components
 
 #### Automated
 
-- [ ] 3.1 TypeScript compiles (npm run build)
-- [ ] 3.2 Linting passes (npm run lint)
+- [x] 3.1 TypeScript compiles (npm run build)
+- [x] 3.2 Linting passes (npm run lint)
 
 #### Manual
 
-- [ ] 3.3 /dashboard redirects 301 to /objects
-- [ ] 3.4 /objects renders empty state with Create object button
-- [ ] 3.5 Create object form submits and redirects to /objects/[id]
-- [ ] 3.6 Photo drag-drop upload succeeds and appears in gallery
-- [ ] 3.7 Delete photo removes it from gallery
-- [ ] 3.8 10-photo limit hides uploader and blocks upload
-- [ ] 3.9 Quota exceeded error shown correctly
-- [ ] 3.10 Non-image file rejected client-side before API call
-- [ ] 3.11 Direct navigation to /objects/[unknownId] redirects to /objects
-- [ ] 3.12 Auth flows (signin, signup) have no regressions
+- [x] 3.3 /dashboard redirects 301 to /objects
+- [x] 3.4 /objects renders empty state with Create object button
+- [x] 3.5 Create object form submits and redirects to /objects/[id]
+- [x] 3.6 Photo drag-drop upload succeeds and appears in gallery
+- [x] 3.7 Delete photo removes it from gallery
+- [x] 3.8 10-photo limit hides uploader and blocks upload
+- [x] 3.9 Quota exceeded error shown correctly
+- [x] 3.10 Non-image file rejected client-side before API call
+- [x] 3.11 Direct navigation to /objects/[unknownId] redirects to /objects
+- [x] 3.12 Auth flows (signin, signup) have no regressions

@@ -423,19 +423,19 @@ After applying the migration, regenerate TypeScript types:
 
 #### Automated
 
-- [x] 1.1 `supabase db reset` applies cleanly with both new migrations — `is_reported` column + `on_transformation_style_used` trigger present
-- [x] 1.2 `npm run typecheck` passes after adding styles API routes
-- [x] 1.3 GET `/api/styles?category=car` without auth returns 401
-- [x] 1.4 GET `/api/styles` without `category` param returns 400
-- [x] 1.5 POST `/api/styles` with missing `name` returns 400
-- [x] 1.6 POST `/api/styles/[id]/report` for non-existent styleId returns 404
+- [x] 1.1 `supabase db reset` applies cleanly with both new migrations — `is_reported` column + `on_transformation_style_used` trigger present — be29699
+- [x] 1.2 `npm run typecheck` passes after adding styles API routes — be29699
+- [x] 1.3 GET `/api/styles?category=car` without auth returns 401 — be29699
+- [x] 1.4 GET `/api/styles` without `category` param returns 400 — be29699
+- [x] 1.5 POST `/api/styles` with missing `name` returns 400 — be29699
+- [x] 1.6 POST `/api/styles/[id]/report` for non-existent styleId returns 404 — be29699
 
 #### Manual
 
-- [x] 1.7 POST `/api/styles` creates style row with correct `user_id` and `is_public = false`
-- [x] 1.8 GET `/api/styles?category=car` returns at least the 3 seeded car presets
-- [x] 1.9 GET `/api/styles?category=car&public_only=true` excludes requesting user's private styles
-- [x] 1.10 POST `/api/styles/[id]/report` sets `is_reported = true`; second call is a no-op
+- [x] 1.7 POST `/api/styles` creates style row with correct `user_id` and `is_public = false` — be29699
+- [x] 1.8 GET `/api/styles?category=car` returns at least the 3 seeded car presets — be29699
+- [x] 1.9 GET `/api/styles?category=car&public_only=true` excludes requesting user's private styles — be29699
+- [x] 1.10 POST `/api/styles/[id]/report` sets `is_reported = true`; second call is a no-op — be29699
 - [ ] 1.11 POST `/transformations/start` with DB style UUID increments `usage_count` by 1
 
 ### Phase 2: StylePicker Library Tab

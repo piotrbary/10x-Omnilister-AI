@@ -442,16 +442,16 @@ After applying the migration, regenerate TypeScript types:
 
 #### Automated
 
-- [x] 2.1 `npm run typecheck` passes with updated `StylePicker.tsx`
-- [x] 2.2 `npm run build` completes without errors
+- [x] 2.1 `npm run typecheck` passes with updated `StylePicker.tsx` — d04c190
+- [x] 2.2 `npm run build` completes without errors — d04c190
 
 #### Manual
 
-- [x] 2.3 Library tab renders public styles for the object's category on first click
-- [x] 2.4 Selecting a library style and clicking Transform triggers POST `/start` with UUID `style_name`
-- [x] 2.5 Empty library state shows "No library styles" message with `/styles/new` link
-- [x] 2.6 Switching back to Presets tab works without re-fetching
-- [x] 2.7 Mobile 375px: tabs and cards accessible
+- [x] 2.3 Library tab renders public styles for the object's category on first click — d04c190
+- [x] 2.4 Selecting a library style and clicking Transform triggers POST `/start` with UUID `style_name` — d04c190
+- [x] 2.5 Empty library state shows "No library styles" message with `/styles/new` link — d04c190
+- [x] 2.6 Switching back to Presets tab works without re-fetching — d04c190
+- [x] 2.7 Mobile 375px: tabs and cards accessible — d04c190
 
 ### Phase 3: "Save as Style" CTA + Standalone Pages
 

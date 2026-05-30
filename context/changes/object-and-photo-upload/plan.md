@@ -383,18 +383,18 @@ The `original-photos` bucket is being changed from private to public. Any existi
 
 #### Automated
 
-- [x] 3.1 TypeScript compiles (npm run build)
-- [x] 3.2 Linting passes (npm run lint)
+- [x] 3.1 TypeScript compiles (npm run build) — aaee73f
+- [x] 3.2 Linting passes (npm run lint) — aaee73f
 
 #### Manual
 
-- [x] 3.3 /dashboard redirects 301 to /objects
-- [x] 3.4 /objects renders empty state with Create object button
-- [x] 3.5 Create object form submits and redirects to /objects/[id]
-- [x] 3.6 Photo drag-drop upload succeeds and appears in gallery
-- [x] 3.7 Delete photo removes it from gallery
-- [x] 3.8 10-photo limit hides uploader and blocks upload
-- [x] 3.9 Quota exceeded error shown correctly
-- [x] 3.10 Non-image file rejected client-side before API call
-- [x] 3.11 Direct navigation to /objects/[unknownId] redirects to /objects
-- [x] 3.12 Auth flows (signin, signup) have no regressions
+- [x] 3.3 /dashboard redirects 301 to /objects — aaee73f
+- [x] 3.4 /objects renders empty state with Create object button — aaee73f
+- [x] 3.5 Create object form submits and redirects to /objects/[id] — aaee73f
+- [x] 3.6 Photo drag-drop upload succeeds and appears in gallery — aaee73f
+- [x] 3.7 Delete photo removes it from gallery — aaee73f
+- [x] 3.8 10-photo limit hides uploader and blocks upload — aaee73f
+- [x] 3.9 Quota exceeded error shown correctly — aaee73f
+- [x] 3.10 Non-image file rejected client-side before API call — aaee73f
+- [x] 3.11 Direct navigation to /objects/[unknownId] redirects to /objects — aaee73f
+- [x] 3.12 Auth flows (signin, signup) have no regressions — aaee73f

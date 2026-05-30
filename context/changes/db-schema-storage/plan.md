@@ -527,28 +527,28 @@ The production `supabase db push` command applies any unapplied migrations. Sinc
 
 #### Automated
 
-- [x] 2.1 `supabase db reset` completes cleanly with RLS section appended
-- [x] 2.2 All 6 tables show `rowsecurity = true` in `pg_tables`
-- [x] 2.3 Policy count correct: 1 policy each for 5 owner-only tables; 4 policies for `styles`
+- [x] 2.1 `supabase db reset` completes cleanly with RLS section appended — 6bfe3bb
+- [x] 2.2 All 6 tables show `rowsecurity = true` in `pg_tables` — 6bfe3bb
+- [x] 2.3 Policy count correct: 1 policy each for 5 owner-only tables; 4 policies for `styles` — 6bfe3bb
 
 #### Manual
 
-- [x] 2.4 Unauthenticated SELECT on `objects` returns 0 rows (not an error)
-- [x] 2.5 User A cannot see User B's objects
+- [x] 2.4 Unauthenticated SELECT on `objects` returns 0 rows (not an error) — 6bfe3bb
+- [x] 2.5 User A cannot see User B's objects — 6bfe3bb
 
 ### Phase 3: Indexes, Storage Buckets & Seeds
 
 #### Automated
 
-- [ ] 3.1 `supabase db reset` applies full migration without errors
-- [ ] 3.2 All 7 indexes present in `pg_indexes`
-- [ ] 3.3 Both buckets present in `storage.buckets`
-- [ ] 3.4 9 style presets seeded with `user_id IS NULL AND is_public = true`
-- [ ] 3.5 `src/types/database.generated.ts` exists and `npm run typecheck` passes
+- [x] 3.1 `supabase db reset` applies full migration without errors
+- [x] 3.2 All 7 indexes present in `pg_indexes`
+- [x] 3.3 Both buckets present in `storage.buckets`
+- [x] 3.4 9 style presets seeded with `user_id IS NULL AND is_public = true`
+- [x] 3.5 `src/types/database.generated.ts` exists and `npm run typecheck` passes
 
 #### Manual
 
-- [ ] 3.6 Both buckets appear as private in Supabase Studio
-- [ ] 3.7 Storage RLS: upload to own path succeeds; upload to other user's path is blocked
-- [ ] 3.8 All 9 style presets have correct categories and no-distortion guardrail in prompt
-- [ ] 3.9 Generated types file contains Tables<'profiles'> and Tables<'transformations'> with expected shapes
+- [x] 3.6 Both buckets appear as private in Supabase Studio
+- [x] 3.7 Storage RLS: upload to own path succeeds; upload to other user's path is blocked
+- [x] 3.8 All 9 style presets have correct categories and no-distortion guardrail in prompt
+- [x] 3.9 Generated types file contains Tables<'profiles'> and Tables<'transformations'> with expected shapes

@@ -49,7 +49,7 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
     if (tab === "library" && libraryStyles === null && !libraryLoading) {
-      loadLibrary();
+      void loadLibrary();
     }
   }
 
@@ -80,11 +80,11 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
         {(["presets", "library"] as Tab[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => handleTabChange(tab)}
+            onClick={() => {
+              handleTabChange(tab);
+            }}
             className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium capitalize transition-colors ${
-              activeTab === tab
-                ? "bg-purple-600 text-white"
-                : "text-white/60 hover:text-white"
+              activeTab === tab ? "bg-purple-600 text-white" : "text-white/60 hover:text-white"
             }`}
           >
             {tab === "presets" ? "Presets" : "Library"}
@@ -98,7 +98,9 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
           {presets.map((preset) => (
             <button
               key={preset.key}
-              onClick={() => handlePresetSelect(preset.key, preset.basePrompt)}
+              onClick={() => {
+                handlePresetSelect(preset.key, preset.basePrompt);
+              }}
               className={`rounded-xl border p-4 text-left transition-colors ${
                 selectedPresetKey === preset.key
                   ? "border-purple-500 bg-purple-600/20 text-white"
@@ -120,9 +122,7 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
               <span className="size-6 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             </div>
           )}
-          {libraryError && (
-            <p className="py-4 text-center text-sm text-red-400">{libraryError}</p>
-          )}
+          {libraryError && <p className="py-4 text-center text-sm text-red-400">{libraryError}</p>}
           {!libraryLoading && libraryStyles !== null && libraryStyles.length === 0 && (
             <div className="py-6 text-center">
               <p className="text-sm text-white/50">No library styles for this category yet.</p>
@@ -136,7 +136,9 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
               {libraryStyles.map((style) => (
                 <button
                   key={style.id}
-                  onClick={() => handleLibrarySelect(style)}
+                  onClick={() => {
+                    handleLibrarySelect(style);
+                  }}
                   className={`rounded-xl border p-4 text-left transition-colors ${
                     selectedLibrary?.id === style.id
                       ? "border-purple-500 bg-purple-600/20 text-white"
@@ -149,9 +151,7 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
                       {style.usage_count}×
                     </span>
                   </div>
-                  {style.description && (
-                    <div className="mt-1 text-xs text-white/50">{style.description}</div>
-                  )}
+                  {style.description && <div className="mt-1 text-xs text-white/50">{style.description}</div>}
                   {style.is_mine && (
                     <span className="mt-2 inline-block rounded-full bg-purple-600/30 px-2 py-0.5 text-xs text-purple-300">
                       My style
@@ -171,10 +171,12 @@ export function StylePicker({ category, onSelect }: StylePickerProps) {
         </label>
         <textarea
           value={customPrompt}
-          onChange={(e) => setCustomPrompt(e.target.value)}
+          onChange={(e) => {
+            setCustomPrompt(e.target.value);
+          }}
           placeholder="Add extra instructions or override the style prompt…"
           rows={3}
-          className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+          className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-white/30 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
         />
       </div>
 

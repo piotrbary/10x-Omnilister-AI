@@ -1,0 +1,145 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { createClient } from "@/lib/supabase";
+import { TransformationSession } from "@/components/transformation/TransformationSession";
+import type { PhotoRecord } from "@/types/objects";
+import type { QualityScoreSnapshot, TransformationJob } from "@/types/transformations";
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect("/auth/signin");
+}
+
+const { objectId } = Astro.params;
+if (!objectId) {
+  return Astro.redirect("/objects");
+}
+
+const supabase = createClient(Astro.request.headers, Astro.cookies);
+if (!supabase) {
+  return Astro.redirect("/objects");
+}
+
+// Fetch object — 404 if not owned by user
+const { data: objectData, error: objectError } = await supabase
+  .from("objects")
+  .select("id, name, version, category, created_at")
+  .eq("id", objectId)
+  .eq("user_id", user.id)
+  .single();
+
+if (objectError || !objectData) {
+  return Astro.redirect("/objects");
+}
+
+const object = {
+  id: objectData.id,
+  name: objectData.name,
+  version: objectData.version,
+  category: objectData.category,
+  createdAt: objectData.created_at,
+};
+
+// Fetch photos
+const { data: photosData } = await supabase
+  .from("photos")
+  .select("id, object_id, original_url, file_size_bytes, mime_type, created_at")
+  .eq("object_id", objectId)
+  .order("created_at", { ascending: true });
+
+const photos: PhotoRecord[] = (photosData ?? []).map((row) => ({
+  id: row.id,
+  objectId: row.object_id,
+  originalUrl: row.original_url,
+  fileSizeBytes: row.file_size_bytes,
+  mimeType: row.mime_type,
+  createdAt: row.created_at,
+}));
+
+// Fetch quality scores for all photos in one query, take latest per photo
+const photoIds = photos.map((p) => p.id);
+const scoresByPhotoId: Record<string, QualityScoreSnapshot> = {};
+
+if (photoIds.length > 0) {
+  const { data: scoresData } = await supabase
+    .from("quality_scores")
+    .select(
+      "photo_id, sharpness, lighting, background, object_features, damage_defects, labels, angle_coverage, sales_readiness, overall_score, is_sales_ready, scored_at"
+    )
+    .in("photo_id", photoIds)
+    .order("scored_at", { ascending: false });
+
+  // Keep only the latest score per photo
+  for (const row of scoresData ?? []) {
+    if (!(row.photo_id in scoresByPhotoId)) {
+      scoresByPhotoId[row.photo_id] = {
+        sharpness: row.sharpness,
+        lighting: row.lighting,
+        background: row.background,
+        object_features: row.object_features,
+        damage_defects: row.damage_defects,
+        labels: row.labels,
+        angle_coverage: row.angle_coverage,
+        sales_readiness: row.sales_readiness,
+        overall: row.overall_score,
+        is_sales_ready: row.is_sales_ready,
+      };
+    }
+  }
+}
+
+// Fetch non-terminal transformations created within the last 24h (resume on refresh)
+const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+const { data: jobsData } = await supabase
+  .from("transformations")
+  .select("id, user_id, object_id, photo_id, style_name, prompt, status, draft_url, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at")
+  .eq("object_id", objectId)
+  .eq("user_id", user.id)
+  .not("status", "in", '("failed","saved")')
+  .gte("created_at", since);
+
+const initialJobs: TransformationJob[] = (jobsData ?? []).map((row) => ({
+  id: row.id,
+  user_id: row.user_id,
+  object_id: row.object_id,
+  photo_id: row.photo_id,
+  style_name: row.style_name,
+  prompt: row.prompt,
+  status: row.status as TransformationJob["status"],
+  draft_url: row.draft_url,
+  result_url: row.result_url,
+  result_file_size_bytes: row.result_file_size_bytes,
+  score_before: row.score_before as QualityScoreSnapshot | null,
+  score_after: row.score_after as QualityScoreSnapshot | null,
+  feedback: row.feedback as TransformationJob["feedback"],
+  error_message: row.error_message,
+  retry_count: row.retry_count,
+  created_at: row.created_at,
+  updated_at: row.updated_at,
+}));
+---
+
+<Layout title={`Transform — ${object.name}`}>
+  <div class="bg-cosmic min-h-screen p-6 text-white">
+    <div class="mx-auto max-w-4xl">
+      <div class="mb-8 flex items-center gap-4">
+        <a href={`/objects/${objectId}`} class="text-sm text-white/50 hover:text-white">
+          ← {object.name}
+        </a>
+        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+          AI Transformation
+        </h1>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <TransformationSession
+          client:load
+          object={object}
+          photos={photos}
+          scoresByPhotoId={scoresByPhotoId}
+          initialJobs={initialJobs}
+        />
+      </div>
+    </div>
+  </div>
+</Layout>

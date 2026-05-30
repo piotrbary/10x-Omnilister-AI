@@ -496,13 +496,13 @@ No data migration needed (new table). The `transformations` table is defined in 
 
 #### Automated
 
-- [x] 1.1 `npm run typecheck` passes with new types and styles files
-- [x] 1.2 `buildPrompt` unit test: guardrail always present; override concatenated
+- [x] 1.1 `npm run typecheck` passes with new types and styles files — 1469164
+- [x] 1.2 `buildPrompt` unit test: guardrail always present; override concatenated — 1469164
 
 #### Manual
 
-- [x] 1.3 `transformations` schema spec reviewed against F-01 FK requirements
-- [x] 1.4 Preset style prompts reviewed — no preset adds non-existent product features
+- [x] 1.3 `transformations` schema spec reviewed against F-01 FK requirements — 1469164
+- [x] 1.4 Preset style prompts reviewed — no preset adds non-existent product features — 1469164
 
 ### Phase 2: Backend — Transformation API
 
@@ -526,17 +526,17 @@ No data migration needed (new table). The `transformations` table is defined in 
 
 #### Automated
 
-- [ ] 3.1 `npm run typecheck` passes on all new components
-- [ ] 3.2 `npm run build` completes without errors
-- [ ] 3.3 No ESLint errors in transformation components directory
+- [x] 3.1 `npm run typecheck` passes on all new components
+- [x] 3.2 `npm run build` completes without errors
+- [x] 3.3 No ESLint errors in transformation components directory
 
 #### Manual
 
-- [ ] 3.4 Session page loads with correct photos for the object
-- [ ] 3.5 Draft previews appear within ~5s; full results within ~60s
-- [ ] 3.6 Score delta displays numerically; dimension breakdown expandable
-- [ ] 3.7 Feedback thumbs update correctly; save checkbox state persists
-- [ ] 3.8 Only checked photos saved after confirm; others absent from gallery
-- [ ] 3.9 Failed job shows error notice with Retry button; disables after `maxRetries`
-- [ ] 3.10 Mobile layout: stacks vertically, all controls accessible
-- [ ] 3.11 Page refresh during transformation resumes from DB state
+- [x] 3.4 Session page loads with correct photos for the object
+- [x] 3.5 Draft previews appear within ~5s; full results within ~60s
+- [x] 3.6 Score delta displays numerically; dimension breakdown expandable
+- [x] 3.7 Feedback thumbs update correctly; save checkbox state persists
+- [x] 3.8 Only checked photos saved after confirm; others absent from gallery
+- [x] 3.9 Failed job shows error notice with Retry button; disables after `maxRetries`
+- [x] 3.10 Mobile layout: stacks vertically, all controls accessible
+- [x] 3.11 Page refresh during transformation resumes from DB state

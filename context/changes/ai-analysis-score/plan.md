@@ -529,25 +529,25 @@ planned.
 
 #### Automated
 
-- [x] 1.1 Type checking passes: `npm run typecheck`
-- [x] 1.2 Migration applies cleanly: `supabase db reset`
+- [x] 1.1 Type checking passes: `npm run typecheck` — be29699
+- [x] 1.2 Migration applies cleanly: `supabase db reset` — be29699
 
 #### Manual
 
-- [x] 1.3 `SELECT features_text FROM objects LIMIT 1` returns column (NULL default)
-- [x] 1.4 `src/types/database.generated.ts` contains `features_text` on objects Row type
+- [x] 1.3 `SELECT features_text FROM objects LIMIT 1` returns column (NULL default) — be29699
+- [x] 1.4 `src/types/database.generated.ts` contains `features_text` on objects Row type — be29699
 
 ### Phase 2: Scoring Core Module
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test` (or `npx vitest run`)
-- [ ] 2.2 Type checking passes: `npm run typecheck`
+- [x] 2.1 Unit tests pass: `npm test` (or `npx vitest run`)
+- [x] 2.2 Type checking passes: `npm run typecheck`
 
 #### Manual
 
-- [ ] 2.3 `scorePhoto()` called with real photo URL returns valid `QualityScoreSnapshot` (scores 0–10, correct `is_sales_ready`)
-- [ ] 2.4 `analyzeObject()` with real photo IDs: new `quality_scores` row exists, `objects.category` and `objects.features_text` populated
+- [x] 2.3 `scorePhoto()` called with real photo URL returns valid `QualityScoreSnapshot` (scores 0–10, correct `is_sales_ready`)
+- [x] 2.4 `analyzeObject()` with real photo IDs: new `quality_scores` row exists, `objects.category` and `objects.features_text` populated
 
 ### Phase 3: API Routes
 

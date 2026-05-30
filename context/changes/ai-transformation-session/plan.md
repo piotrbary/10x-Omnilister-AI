@@ -526,17 +526,17 @@ No data migration needed (new table). The `transformations` table is defined in 
 
 #### Automated
 
-- [x] 3.1 `npm run typecheck` passes on all new components
-- [x] 3.2 `npm run build` completes without errors
-- [x] 3.3 No ESLint errors in transformation components directory
+- [x] 3.1 `npm run typecheck` passes on all new components — e663ac5
+- [x] 3.2 `npm run build` completes without errors — e663ac5
+- [x] 3.3 No ESLint errors in transformation components directory — e663ac5
 
 #### Manual
 
-- [x] 3.4 Session page loads with correct photos for the object
-- [x] 3.5 Draft previews appear within ~5s; full results within ~60s
-- [x] 3.6 Score delta displays numerically; dimension breakdown expandable
-- [x] 3.7 Feedback thumbs update correctly; save checkbox state persists
-- [x] 3.8 Only checked photos saved after confirm; others absent from gallery
-- [x] 3.9 Failed job shows error notice with Retry button; disables after `maxRetries`
-- [x] 3.10 Mobile layout: stacks vertically, all controls accessible
-- [x] 3.11 Page refresh during transformation resumes from DB state
+- [x] 3.4 Session page loads with correct photos for the object — e663ac5
+- [x] 3.5 Draft previews appear within ~5s; full results within ~60s — e663ac5
+- [x] 3.6 Score delta displays numerically; dimension breakdown expandable — e663ac5
+- [x] 3.7 Feedback thumbs update correctly; save checkbox state persists — e663ac5
+- [x] 3.8 Only checked photos saved after confirm; others absent from gallery — e663ac5
+- [x] 3.9 Failed job shows error notice with Retry button; disables after `maxRetries` — e663ac5
+- [x] 3.10 Mobile layout: stacks vertically, all controls accessible — e663ac5
+- [x] 3.11 Page refresh during transformation resumes from DB state — e663ac5

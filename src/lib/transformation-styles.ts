@@ -82,6 +82,15 @@ export const PRESET_STYLES: Record<ObjectCategory, PresetStyle[]> = {
   ],
 };
 
+export function buildPromptFromRaw(rawPrompt: string, customOverride?: string): string {
+  const parts = [rawPrompt];
+  if (customOverride) {
+    parts.push(customOverride);
+  }
+  parts.push(NO_DISTORTION_GUARDRAIL);
+  return parts.join(" ");
+}
+
 export function buildPrompt(styleKey: string, customOverride?: string): string {
   const allStyles = Object.values(PRESET_STYLES).flat();
   const style = allStyles.find((s) => s.key === styleKey);

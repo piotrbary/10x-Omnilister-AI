@@ -2,7 +2,7 @@
 change_id: global-style-library
 roadmap_id: S-04
 title: "Globalna biblioteka stylów/promptów z przeglądaniem"
-status: implementing
+status: implemented
 created: 2026-05-31
 updated: 2026-05-31
 

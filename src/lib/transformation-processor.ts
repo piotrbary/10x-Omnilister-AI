@@ -3,7 +3,7 @@ import type { Database } from "../types/database.generated";
 import type { QualityScoreSnapshot, TransformationJob } from "../types/transformations";
 import type { ObjectCategory } from "./config";
 import { aiConfig } from "./config";
-import { generateDraft, generateFull } from "./openrouter-images";
+import { generateFull } from "./openrouter-images";
 import { scorePhoto } from "./quality-scoring";
 
 export async function processTransformationBatch(
@@ -24,16 +24,32 @@ export async function processTransformationBatch(
   await Promise.all(jobs.map((job) => processJob(job, supabase, category)));
 }
 
+async function writeLog(
+  supabase: SupabaseClient<Database>,
+  jobId: string,
+  userId: string,
+  logs: string[],
+): Promise<void> {
+  await supabase
+    .from("transformations")
+    .update({ error_message: logs.join("\n"), updated_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("user_id", userId);
+}
+
 async function processJob(
   job: TransformationJob,
   supabase: SupabaseClient<Database>,
   category: ObjectCategory,
 ): Promise<void> {
   let retryCount = job.retry_count;
-  let currentDraftUrl = job.draft_url;
+  const logs: string[] = [];
 
   while (true) {
     try {
+      logs.push(`[1] Fetching photo from DB photo_id=${job.photo_id.slice(0, 8)}`);
+      await writeLog(supabase, job.id, job.user_id, logs);
+
       const { data: photoRow, error: photoErr } = await supabase
         .from("photos")
         .select("original_url, mime_type")
@@ -45,42 +61,26 @@ async function processJob(
         throw new Error(`Photo not found: ${photoErr?.message ?? "no data"}`);
       }
 
+      logs.push(`[2] Fetching original photo bytes mime=${photoRow.mime_type} url_len=${photoRow.original_url.length}`);
+      await writeLog(supabase, job.id, job.user_id, logs);
+
       const imageResponse = await fetch(photoRow.original_url);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch original photo: HTTP ${imageResponse.status}`);
       }
       const imageData = new Uint8Array(await imageResponse.arrayBuffer());
       const mimeType = photoRow.mime_type;
+      logs.push(`[2] Photo fetched bytes=${imageData.byteLength}`);
 
-      if (!currentDraftUrl) {
-        const { buffer: draftBuffer } = await generateDraft(imageData, job.prompt, mimeType);
-        const draftPath = `${job.user_id}/${job.object_id}/${job.id}/draft.jpg`;
+      logs.push(`[3] Calling OpenRouter ${aiConfig.transformationModel} for full generation`);
+      await writeLog(supabase, job.id, job.user_id, logs);
 
-        const { error: uploadErr } = await supabase.storage
-          .from("transformed-photos")
-          .upload(draftPath, new Blob([draftBuffer.buffer as ArrayBuffer], { type: "image/jpeg" }), {
-            contentType: "image/jpeg",
-            upsert: true,
-          });
+      const { buffer: fullBuffer } = await generateFull(imageData, job.prompt, mimeType, logs);
+      await writeLog(supabase, job.id, job.user_id, logs);
 
-        if (uploadErr) throw new Error(`Draft upload failed: ${uploadErr.message}`);
-
-        const { data: signedDraft } = await supabase.storage
-          .from("transformed-photos")
-          .createSignedUrl(draftPath, 86400);
-
-        const draftUrl = signedDraft?.signedUrl ?? "";
-        currentDraftUrl = draftUrl;
-
-        await supabase
-          .from("transformations")
-          .update({ status: "draft_ready", draft_url: draftUrl, updated_at: new Date().toISOString() })
-          .eq("id", job.id)
-          .eq("user_id", job.user_id);
-      }
-
-      const { buffer: fullBuffer } = await generateFull(imageData, job.prompt, mimeType);
       const fullPath = `${job.user_id}/${job.object_id}/${job.id}/full.jpg`;
+      logs.push(`[3] Uploading full to storage path=${fullPath}`);
+      await writeLog(supabase, job.id, job.user_id, logs);
 
       const { error: fullUploadErr } = await supabase.storage
         .from("transformed-photos")
@@ -97,6 +97,7 @@ async function processJob(
 
       const resultUrl = signedFull?.signedUrl ?? "";
       const resultFileSizeBytes = fullBuffer.byteLength;
+      logs.push(`[3] Full ready bytes=${resultFileSizeBytes} signed_url_ok=${!!signedFull?.signedUrl}`);
 
       await supabase
         .from("transformations")
@@ -104,6 +105,7 @@ async function processJob(
           status: "full_ready",
           result_url: resultUrl,
           result_file_size_bytes: resultFileSizeBytes,
+          error_message: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", job.id)
@@ -125,21 +127,22 @@ async function processJob(
       break;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      logs.push(`[ERROR] ${message}`);
 
       if (retryCount < aiConfig.maxRetries) {
         retryCount++;
+        logs.push(`[RETRY] attempt ${retryCount} of ${aiConfig.maxRetries}`);
         await supabase
           .from("transformations")
-          .update({ retry_count: retryCount, updated_at: new Date().toISOString() })
+          .update({ retry_count: retryCount, error_message: logs.join("\n"), updated_at: new Date().toISOString() })
           .eq("id", job.id)
           .eq("user_id", job.user_id);
-        // currentDraftUrl preserved so next iteration skips draft if already done
       } else {
         await supabase
           .from("transformations")
           .update({
             status: "failed",
-            error_message: message,
+            error_message: logs.join("\n"),
             updated_at: new Date().toISOString(),
           })
           .eq("id", job.id)

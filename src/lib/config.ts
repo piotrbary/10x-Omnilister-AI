@@ -32,8 +32,8 @@ export const aiConfig = {
   provider: "openrouter" as const,
   baseUrl: "https://openrouter.ai/api/v1",
 
-  /** OpenRouter model ID for full-quality image editing. */
-  transformationModel: "openai/gpt-image-1",
+  /** OpenRouter model ID for full-quality image generation (image+text → image). */
+  transformationModel: "google/gemini-2.5-flash-image",
 
   /** Timeout for full AI transformation response (ms). Matches NFR ≤ 60 s. */
   transformationTimeoutMs: 60_000,

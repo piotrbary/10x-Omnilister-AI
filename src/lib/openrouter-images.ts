@@ -1,77 +1,70 @@
 import { OPENROUTER_API_KEY } from "astro:env/server";
 import { aiConfig } from "./config";
 
-const DRAFT_MODEL = "openai/dall-e-2";
-const DRAFT_SIZE = "256x256";
-const FULL_SIZE = "1024x1024";
-
-async function callImageEdit(
-  imageData: Uint8Array,
-  mimeType: string,
-  prompt: string,
-  model: string,
-  size: string,
-): Promise<Uint8Array> {
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= aiConfig.maxRetries; attempt++) {
-    try {
-      const formData = new FormData();
-      formData.append("image", new Blob([imageData.buffer as ArrayBuffer], { type: mimeType }), "image.jpg");
-      formData.append("prompt", prompt);
-      formData.append("n", "1");
-      formData.append("size", size);
-      formData.append("response_format", "b64_json");
-      formData.append("model", model);
-
-      const response = await fetch(`${aiConfig.baseUrl}/images/edits`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${OPENROUTER_API_KEY ?? ""}` },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        throw new Error(`OpenRouter ${response.status}: ${text.slice(0, 200)}`);
-      }
-
-      const data = (await response.json()) as { data: Array<{ b64_json?: string }> };
-      const b64 = data.data?.[0]?.b64_json;
-      if (!b64) throw new Error("No image data in OpenRouter response");
-
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    } catch (err) {
-      lastError = err;
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
-}
-
-// Draft uses dall-e-2 at 256x256 — gpt-image-1 has no sub-1024 size option.
-export async function generateDraft(
-  imageBuffer: Uint8Array,
-  prompt: string,
-  mimeType: string,
-): Promise<{ url: string; buffer: Uint8Array }> {
-  const buffer = await callImageEdit(imageBuffer, mimeType, prompt, DRAFT_MODEL, DRAFT_SIZE);
-  return { url: "", buffer };
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }
 
 export async function generateFull(
   imageBuffer: Uint8Array,
   prompt: string,
   mimeType: string,
+  logs: string[] = [],
 ): Promise<{ url: string; buffer: Uint8Array }> {
-  const buffer = await callImageEdit(
-    imageBuffer,
-    mimeType,
-    prompt,
-    aiConfig.transformationModel,
-    FULL_SIZE,
-  );
-  return { url: "", buffer };
+  const dataUrl = `data:${mimeType};base64,${uint8ArrayToBase64(imageBuffer)}`;
+  const keyPreview = (OPENROUTER_API_KEY ?? "").slice(0, 8) || "(missing)";
+  logs.push(`[generate] POST ${aiConfig.baseUrl}/chat/completions model=${aiConfig.transformationModel} key=${keyPreview}...`);
+
+  const res = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENROUTER_API_KEY ?? ""}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: aiConfig.transformationModel,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: dataUrl } },
+            {
+              type: "text",
+              text: `Professional e-commerce product photo. Style and requirements: ${prompt}`,
+            },
+          ],
+        },
+      ],
+      modalities: ["image", "text"],
+    }),
+  });
+
+  logs.push(`[generate] response status=${res.status}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    logs.push(`[generate] ERROR_BODY=${text.slice(0, 500)}`);
+    throw new Error(`Gemini image generation failed: HTTP ${res.status} — ${text.slice(0, 200)}`);
+  }
+
+  type ImageChoice = {
+    message: {
+      content?: string;
+      images?: Array<{ image_url?: { url?: string } }>;
+    };
+  };
+  const data = (await res.json()) as { choices: ImageChoice[] };
+  const imageDataUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+  logs.push(`[generate] image_present=${!!imageDataUrl} preview="${imageDataUrl?.slice(0, 40)}…"`);
+
+  if (!imageDataUrl) throw new Error("No image in Gemini response");
+
+  const base64 = imageDataUrl.includes(",") ? imageDataUrl.split(",")[1] : imageDataUrl;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  logs.push(`[generate] SUCCESS decoded_bytes=${bytes.byteLength}`);
+
+  return { url: "", buffer: bytes };
 }

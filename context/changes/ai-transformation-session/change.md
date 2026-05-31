@@ -2,7 +2,7 @@
 change_id: ai-transformation-session
 roadmap_id: S-03
 title: "Sesja transformacji AI — podgląd przed/po i zapis"
-status: implementing
+status: implemented
 created: 2026-05-30
 updated: 2026-05-31
 reviewed: 2026-05-30

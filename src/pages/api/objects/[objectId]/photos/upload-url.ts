@@ -96,7 +96,13 @@ export const POST: APIRoute = async (context) => {
     );
   }
 
-  const safeName = `${crypto.randomUUID()}_${fileName}`;
+  const ext = fileName.lastIndexOf(".") !== -1 ? fileName.slice(fileName.lastIndexOf(".")) : "";
+  const sanitizedBase = fileName
+    .slice(0, fileName.length - ext.length)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "_");
+  const safeName = `${crypto.randomUUID()}_${sanitizedBase || "file"}${ext}`;
   const path = `${user.id}/${objectId}/${safeName}`;
 
   const { data: uploadData, error: uploadError } = await supabase.storage

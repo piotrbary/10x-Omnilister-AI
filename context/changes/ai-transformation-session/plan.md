@@ -508,19 +508,19 @@ No data migration needed (new table). The `transformations` table is defined in 
 
 #### Automated
 
-- [ ] 2.1 `npm run typecheck` passes on all new API route files
-- [ ] 2.2 POST `/start` with invalid body returns 400
-- [ ] 2.3 GET `/status` without auth returns 401
-- [ ] 2.4 POST `/feedback` with invalid value returns 400
+- [x] 2.1 `npm run typecheck` passes on all new API route files
+- [x] 2.2 POST `/start` with invalid body returns 400
+- [x] 2.3 GET `/status` without auth returns 401
+- [x] 2.4 POST `/feedback` with invalid value returns 400
 
 #### Manual
 
-- [ ] 2.5 POST `/start` creates pending DB rows; transitions to `draft_ready` within ~5s
-- [ ] 2.6 Jobs reach `full_ready` with non-null `result_url` and `score_after` within ~60s
-- [ ] 2.7 GET `/status` returns correct statuses for all polled IDs
-- [ ] 2.8 POST `/save` marks job saved; photo visible in gallery
-- [ ] 2.9 POST `/feedback` records and updates correctly
-- [ ] 2.10 POST `/save` at 99.9 MB storage returns 400 with limit message
+- [x] 2.5 POST `/start` creates pending DB rows; transitions to `draft_ready` within ~5s
+- [x] 2.6 Jobs reach `full_ready` with non-null `result_url` and `score_after` within ~60s
+- [x] 2.7 GET `/status` returns correct statuses for all polled IDs
+- [x] 2.8 POST `/save` marks job saved; photo visible in gallery
+- [x] 2.9 POST `/feedback` records and updates correctly
+- [x] 2.10 POST `/save` at 99.9 MB storage returns 400 with limit message
 
 ### Phase 3: Frontend — Session UI
 

@@ -1,0 +1,26 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { StyleCreatePage } from "@/components/styles/StyleCreatePage";
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect("/auth/signin");
+}
+---
+
+<Layout title="Create Style">
+  <div class="bg-cosmic min-h-screen p-6 text-white">
+    <div class="mx-auto max-w-2xl">
+      <div class="mb-8 flex items-center gap-4">
+        <a href="/styles" class="text-sm text-white/50 hover:text-white">← Style Library</a>
+        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+          Create a Style
+        </h1>
+      </div>
+
+      <div class="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <StyleCreatePage client:load />
+      </div>
+    </div>
+  </div>
+</Layout>

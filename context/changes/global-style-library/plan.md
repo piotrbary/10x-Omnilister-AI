@@ -436,7 +436,7 @@ After applying the migration, regenerate TypeScript types:
 - [x] 1.8 GET `/api/styles?category=car` returns at least the 3 seeded car presets — be29699
 - [x] 1.9 GET `/api/styles?category=car&public_only=true` excludes requesting user's private styles — be29699
 - [x] 1.10 POST `/api/styles/[id]/report` sets `is_reported = true`; second call is a no-op — be29699
-- [ ] 1.11 POST `/transformations/start` with DB style UUID increments `usage_count` by 1
+- [x] 1.11 POST `/transformations/start` with DB style UUID increments `usage_count` by 1
 
 ### Phase 2: StylePicker Library Tab
 
@@ -457,15 +457,15 @@ After applying the migration, regenerate TypeScript types:
 
 #### Automated
 
-- [ ] 3.1 `npm run typecheck` passes on all new components and updated `TransformationSession.tsx`
-- [ ] 3.2 `npm run build` completes without errors
-- [ ] 3.3 No ESLint errors in `src/components/styles/` or updated `TransformationSession.tsx`
+- [x] 3.1 `npm run typecheck` passes on all new components and updated `TransformationSession.tsx`
+- [x] 3.2 `npm run build` completes without errors
+- [x] 3.3 No ESLint errors in `src/components/styles/` or updated `TransformationSession.tsx`
 
 #### Manual
 
-- [ ] 3.4 `/styles` page renders category tabs; Car tab shows at least 3 seeded presets with usage counts
-- [ ] 3.5 Report button on a non-own style → disables after click; `is_reported = true` in DB; persists across page refresh
-- [ ] 3.6 `/styles/new` form creates public style and redirects to `/styles?category=...`
-- [ ] 3.7 Post-transformation "Save as Style" pre-fills prompt correctly (preset base or custom override, NOT the full guardrail-appended string)
-- [ ] 3.8 "Confirm save" works independently of the "Save as Style" form
-- [ ] 3.9 Mobile 375px: `/styles` page category tabs, cards, and Report button accessible
+- [x] 3.4 `/styles` page renders category tabs; Car tab shows at least 3 seeded presets with usage counts
+- [x] 3.5 Report button on a non-own style → disables after click; `is_reported = true` in DB; persists across page refresh
+- [x] 3.6 `/styles/new` form creates public style and redirects to `/styles?category=...`
+- [x] 3.7 Post-transformation "Save as Style" pre-fills prompt correctly (preset base or custom override, NOT the full guardrail-appended string)
+- [x] 3.8 "Confirm save" works independently of the "Save as Style" form
+- [x] 3.9 Mobile 375px: `/styles` page category tabs, cards, and Report button accessible

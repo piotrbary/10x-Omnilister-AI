@@ -1,0 +1,24 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { StyleLibrary } from "@/components/styles/StyleLibrary";
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect("/auth/signin");
+}
+---
+
+<Layout title="Style Library">
+  <div class="bg-cosmic min-h-screen p-6 text-white">
+    <div class="mx-auto max-w-5xl">
+      <div class="mb-8 flex items-center gap-4">
+        <a href="/objects" class="text-sm text-white/50 hover:text-white">← Objects</a>
+        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
+          Style Library
+        </h1>
+      </div>
+
+      <StyleLibrary client:load />
+    </div>
+  </div>
+</Layout>

@@ -4,6 +4,7 @@ import type { TransformationJob, QualityScoreSnapshot, FeedbackValue } from "@/t
 import { PhotoSelector } from "./PhotoSelector";
 import { StylePicker } from "./StylePicker";
 import { TransformationJobCard } from "./TransformationJobCard";
+import { StyleForm } from "@/components/styles/StyleForm";
 
 type Step = "selecting" | "styling" | "transforming" | "saving";
 
@@ -34,9 +35,11 @@ export function TransformationSession({ object, photos, scoresByPhotoId, initial
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Stored for Save-as-Style CTA (consumed by S-04 Phase 3)
-  const [_selectedStyleKey, setSelectedStyleKey] = useState<string | undefined>();
-  const [_selectedStylePrompt, setSelectedStylePrompt] = useState<string | undefined>();
+  const [selectedStyleKey, setSelectedStyleKey] = useState<string | undefined>();
+  const [selectedStylePrompt, setSelectedStylePrompt] = useState<string | undefined>();
+  const [customOverrideAtSelection, setCustomOverrideAtSelection] = useState<string | undefined>();
+  const [saveStyleOpen, setSaveStyleOpen] = useState(false);
+  const [styleSaved, setStyleSaved] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -90,6 +93,9 @@ export function TransformationSession({ object, photos, scoresByPhotoId, initial
   async function handleStyleSelect(styleKey: string, customOverride?: string, rawPrompt?: string) {
     setSelectedStyleKey(styleKey);
     setSelectedStylePrompt(rawPrompt);
+    setCustomOverrideAtSelection(customOverride);
+    setSaveStyleOpen(false);
+    setStyleSaved(false);
     setStartError(null);
     setStartLoading(true);
 
@@ -308,6 +314,45 @@ export function TransformationSession({ object, photos, scoresByPhotoId, initial
                 />
               ))}
           </div>
+          {/* Save as Style accordion */}
+          {selectedStyleKey !== undefined && (
+            <div className="rounded-xl border border-white/10 bg-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setSaveStyleOpen((prev) => !prev);
+                }}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm text-white/70 hover:text-white"
+              >
+                <span>💡 Save this prompt as a style to use it again</span>
+                <span className="text-white/40">{saveStyleOpen ? "▲" : "▼"}</span>
+              </button>
+              {saveStyleOpen && (
+                <div className="border-t border-white/10 px-4 pt-3 pb-4">
+                  {styleSaved ? (
+                    <p className="text-sm text-green-400">Style saved!</p>
+                  ) : (
+                    <StyleForm
+                      category={(object.category ?? "item") as "car" | "real-estate" | "item"}
+                      initialPrompt={
+                        customOverrideAtSelection && customOverrideAtSelection.trim() !== ""
+                          ? customOverrideAtSelection
+                          : (selectedStylePrompt ?? "")
+                      }
+                      onSuccess={() => {
+                        setStyleSaved(true);
+                        setSaveStyleOpen(false);
+                      }}
+                      onCancel={() => {
+                        setSaveStyleOpen(false);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {saveError && <p className="text-sm text-red-400">{saveError}</p>}
           <button
             onClick={handleConfirmSave}

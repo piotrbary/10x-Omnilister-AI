@@ -85,7 +85,7 @@ export const POST: APIRoute = async (context) => {
   // Return 500 only if ALL photos failed
   const allFailed = result.photoScores.every((s: PhotoScoreResult) => "error" in s);
   if (allFailed) {
-    return new Response(JSON.stringify({ error: "All photos failed analysis", scores: result.photoScores }), {
+    return new Response(JSON.stringify({ error: "All photos failed analysis", scores: result.photoScores, debug: result.debugLogs }), {
       status: 500,
     });
   }
@@ -95,6 +95,7 @@ export const POST: APIRoute = async (context) => {
       category: result.category,
       features_text: result.features_text,
       scores: result.photoScores,
+      debug: result.debugLogs,
     }),
     { status: 200 },
   );

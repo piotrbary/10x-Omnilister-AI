@@ -82,7 +82,15 @@ export default function PhotoUploader({ objectId, currentCount, onUploadComplete
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`Storage upload failed: ${xhr.status}`));
+            let message = `Storage upload failed: ${xhr.status}`;
+            try {
+              const body = JSON.parse(xhr.responseText) as { message?: string; error?: string };
+              if (body.message) message = body.message;
+              else if (body.error) message = body.error;
+            } catch {
+              // response not JSON — keep the status-code message
+            }
+            reject(new Error(message));
           }
         };
         xhr.onerror = () => {

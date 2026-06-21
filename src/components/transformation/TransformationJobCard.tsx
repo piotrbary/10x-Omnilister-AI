@@ -41,20 +41,11 @@ export function TransformationJobCard({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
-      {/* Pending / draft_ready */}
+      {/* Pending */}
       {isPending && (
         <div className="flex flex-col items-center gap-3 py-8">
           <span className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-purple-400" />
-          <p className="text-sm text-white/50">
-            {job.status === "draft_ready" ? "Finalizing full result…" : "Generating draft…"}
-          </p>
-          {job.draft_url && (
-            <img
-              src={job.draft_url}
-              alt="Draft preview"
-              className="mt-2 max-h-48 rounded-lg object-contain opacity-70"
-            />
-          )}
+          <p className="text-sm text-white/50">Processing…</p>
         </div>
       )}
 

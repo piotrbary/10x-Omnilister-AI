@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export type TransformationStatus = "pending" | "draft_ready" | "full_ready" | "failed" | "saved";
+export type TransformationStatus = "pending" | "full_ready" | "failed" | "saved";
 
 export type FeedbackValue = "improved" | "not_improved";
 
@@ -25,7 +25,6 @@ export interface TransformationJob {
   style_name: string;
   prompt: string;
   status: TransformationStatus;
-  draft_url: string | null;
   result_url: string | null;
   result_file_size_bytes: number | null;
   score_before: QualityScoreSnapshot | null;
@@ -54,8 +53,7 @@ export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
 
 export const StatusResponseJobSchema = z.object({
   id: z.string().uuid(),
-  status: z.enum(["pending", "draft_ready", "full_ready", "failed", "saved"]),
-  draft_url: z.string().nullable(),
+  status: z.enum(["pending", "full_ready", "failed", "saved"]),
   result_url: z.string().nullable(),
   score_before: z.record(z.string(), z.unknown()).nullable(),
   score_after: z.record(z.string(), z.unknown()).nullable(),

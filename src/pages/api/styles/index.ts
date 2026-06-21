@@ -35,7 +35,7 @@ export const GET: APIRoute = async (context) => {
 
   let query = supabase
     .from("styles")
-    .select("id, name, category, prompt, description, is_public, usage_count, user_id, created_at")
+    .select("id, name, category, prompt, description, is_public, usage_count, is_reported, user_id, created_at")
     .eq("category", category)
     .order("usage_count", { ascending: false })
     .order("created_at", { ascending: false });
@@ -58,6 +58,7 @@ export const GET: APIRoute = async (context) => {
     description: row.description,
     is_public: row.is_public,
     usage_count: row.usage_count,
+    is_reported: row.is_reported,
     is_mine: row.user_id === user.id,
     created_at: row.created_at,
   }));

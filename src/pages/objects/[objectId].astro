@@ -2,7 +2,9 @@
 import Layout from "@/layouts/Layout.astro";
 import { createClient } from "@/lib/supabase";
 import PhotoGallery from "@/components/objects/PhotoGallery";
+import AnalysisSection from "@/components/AnalysisSection";
 import type { ObjectRecord, PhotoRecord } from "@/types/objects";
+import type { QualityScoreSnapshot } from "@/types/transformations";
 
 const user = Astro.locals.user;
 if (!user) {
@@ -21,7 +23,7 @@ if (!supabase) {
 
 const { data: objectData, error: objectError } = await supabase
   .from("objects")
-  .select("id, name, version, category, created_at")
+  .select("id, name, version, category, features_text, created_at")
   .eq("id", objectId)
   .eq("user_id", user.id)
   .single();
@@ -52,26 +54,89 @@ const photos: PhotoRecord[] = (photosData ?? []).map((row) => ({
   mimeType: row.mime_type,
   createdAt: row.created_at,
 }));
+
+// Pre-load quality scores — keep latest per photo
+const photoIds = photos.map((p) => p.id);
+const scoresByPhotoId: Record<string, QualityScoreSnapshot> = {};
+
+if (photoIds.length > 0) {
+  const { data: scoresData } = await supabase
+    .from("quality_scores")
+    .select(
+      "photo_id, sharpness, lighting, background, object_features, damage_defects, labels, angle_coverage, sales_readiness, overall_score, is_sales_ready, scored_at"
+    )
+    .in("photo_id", photoIds)
+    .order("scored_at", { ascending: false });
+
+  for (const row of scoresData ?? []) {
+    if (!(row.photo_id in scoresByPhotoId)) {
+      scoresByPhotoId[row.photo_id] = {
+        sharpness: row.sharpness,
+        lighting: row.lighting,
+        background: row.background,
+        object_features: row.object_features,
+        damage_defects: row.damage_defects,
+        labels: row.labels,
+        angle_coverage: row.angle_coverage,
+        sales_readiness: row.sales_readiness,
+        overall: row.overall_score,
+        is_sales_ready: row.is_sales_ready,
+      };
+    }
+  }
+}
+
+// Shape photos for AnalysisSection (expects snake_case)
+const photosForAnalysis = photos.map((p) => ({
+  id: p.id,
+  thumbnail_url: null,
+  original_url: p.originalUrl,
+}));
 ---
 
 <Layout title={object.name}>
   <div class="bg-cosmic min-h-screen p-6 text-white">
     <div class="mx-auto max-w-4xl">
-      <div class="mb-8 flex items-center gap-4">
+      <div class="mb-8 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <a
+            href="/objects"
+            class="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/20"
+          >
+            ← Back
+          </a>
+          <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+            {object.name}
+          </h1>
+        </div>
         <a
-          href="/objects"
-          class="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/20"
+          href={`/objects/${objectId}/transform`}
+          class="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-500"
         >
-          ← Back
+          AI Transformation →
         </a>
-        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
-          {object.name}
-        </h1>
       </div>
 
+      <!-- Photo gallery -->
       <div class="rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-xl">
         <PhotoGallery objectId={objectId} initialPhotos={photos} client:load />
       </div>
+
+      <!-- AI Analysis & Scoring -->
+      {
+        photos.length > 0 && (
+          <div class="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+            <AnalysisSection
+              client:load
+              objectId={objectId}
+              photos={photosForAnalysis}
+              initialCategory={objectData.category as any}
+              initialFeaturesText={objectData.features_text}
+              initialScores={scoresByPhotoId}
+            />
+          </div>
+        )
+      }
     </div>
   </div>
 </Layout>

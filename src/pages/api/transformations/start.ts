@@ -112,7 +112,7 @@ export const POST: APIRoute = async (context) => {
     .from("transformations")
     .insert(inserts)
     .select(
-      "id, user_id, object_id, photo_id, style_name, prompt, status, draft_url, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at",
+      "id, user_id, object_id, photo_id, style_name, prompt, status, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at",
     );
 
   if (insertErr || !insertedJobs) {
@@ -129,7 +129,6 @@ export const POST: APIRoute = async (context) => {
     style_name: row.style_name,
     prompt: row.prompt,
     status: row.status as TransformationJob["status"],
-    draft_url: row.draft_url,
     result_url: row.result_url,
     result_file_size_bytes: row.result_file_size_bytes,
     score_before: (row.score_before as unknown as QualityScoreSnapshot | null),
@@ -141,11 +140,42 @@ export const POST: APIRoute = async (context) => {
     updated_at: row.updated_at,
   }));
 
-  // Fire background processing — must not await
-  context.locals.runtime.ctx.waitUntil(processTransformationBatch(jobs, supabase));
+  // Process synchronously — await so caller gets complete results
+  await processTransformationBatch(jobs, supabase);
+
+  // Re-fetch jobs with final state (result_url, score_after, status)
+  const { data: finalRows, error: fetchErr } = await supabase
+    .from("transformations")
+    .select(
+      "id, user_id, object_id, photo_id, style_name, prompt, status, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at",
+    )
+    .in("id", jobs.map((j) => j.id));
+
+  if (fetchErr || !finalRows) {
+    return new Response(JSON.stringify({ error: "Failed to fetch final job state" }), { status: 500 });
+  }
+
+  const finalJobs: TransformationJob[] = finalRows.map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    object_id: row.object_id,
+    photo_id: row.photo_id,
+    style_name: row.style_name,
+    prompt: row.prompt,
+    status: row.status as TransformationJob["status"],
+    result_url: row.result_url,
+    result_file_size_bytes: row.result_file_size_bytes,
+    score_before: (row.score_before as unknown as QualityScoreSnapshot | null),
+    score_after: (row.score_after as unknown as QualityScoreSnapshot | null),
+    feedback: row.feedback as TransformationJob["feedback"],
+    error_message: row.error_message,
+    retry_count: row.retry_count,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
 
   return new Response(
-    JSON.stringify({ job_ids: jobs.map((j) => j.id) }),
+    JSON.stringify({ jobs: finalJobs }),
     { status: 200 },
   );
 };

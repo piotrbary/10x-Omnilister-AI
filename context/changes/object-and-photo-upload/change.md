@@ -2,7 +2,7 @@
 change_id: object-and-photo-upload
 roadmap_id: S-01
 title: "Object creation and photo upload — browse gallery of uploaded photos"
-status: implemented
+status: impl_reviewed
 created: 2026-05-31
 updated: 2026-05-31
 archived_at: null

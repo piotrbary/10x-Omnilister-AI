@@ -88,14 +88,15 @@ if (photoIds.length > 0) {
   }
 }
 
-// Fetch non-terminal transformations created within the last 24h (resume on refresh)
+// Fetch full_ready transformations created within the last 24h (resume on refresh)
+// Pending jobs are never resumable — sync processing ran in a previous request
 const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 const { data: jobsData } = await supabase
   .from("transformations")
-  .select("id, user_id, object_id, photo_id, style_name, prompt, status, draft_url, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at")
+  .select("id, user_id, object_id, photo_id, style_name, prompt, status, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at")
   .eq("object_id", objectId)
   .eq("user_id", user.id)
-  .not("status", "in", '("failed","saved")')
+  .eq("status", "full_ready")
   .gte("created_at", since);
 
 const initialJobs: TransformationJob[] = (jobsData ?? []).map((row) => ({
@@ -106,7 +107,6 @@ const initialJobs: TransformationJob[] = (jobsData ?? []).map((row) => ({
   style_name: row.style_name,
   prompt: row.prompt,
   status: row.status as TransformationJob["status"],
-  draft_url: row.draft_url,
   result_url: row.result_url,
   result_file_size_bytes: row.result_file_size_bytes,
   score_before: row.score_before as QualityScoreSnapshot | null,

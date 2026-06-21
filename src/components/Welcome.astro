@@ -2,125 +2,108 @@
 import Topbar from "@/components/Topbar.astro";
 ---
 
-<div class="bg-cosmic relative min-h-screen w-full overflow-hidden">
-  <!-- Cosmic orbs -->
-  <div
-    class="pointer-events-none absolute top-1/4 -left-24 h-[350px] w-[350px] rounded-full bg-purple-500/20 blur-[120px]"
-  >
+<!-- Hero band — brand-navy per Design.md -->
+<div class="relative min-h-screen overflow-hidden" style="background-color: var(--dt-color-brand-navy);">
+
+  <!-- Decorative orbs (brand purple tones) -->
+  <div class="pointer-events-none absolute top-1/4 -left-24 h-[350px] w-[350px] rounded-full blur-[120px]"
+    style="background-color: color-mix(in oklch, var(--dt-color-primary) 25%, transparent);">
   </div>
-  <div
-    class="pointer-events-none absolute top-2/3 -right-16 h-[250px] w-[250px] rounded-full bg-blue-500/15 blur-[100px]"
-  >
-  </div>
-  <div
-    class="pointer-events-none absolute top-0 left-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-indigo-400/10 blur-[140px]"
-  >
+  <div class="pointer-events-none absolute top-2/3 -right-16 h-[250px] w-[250px] rounded-full blur-[100px]"
+    style="background-color: color-mix(in oklch, var(--dt-color-brand-teal) 15%, transparent);">
   </div>
 
-  <!-- Star field -->
-  <div
-    class="pointer-events-none absolute inset-0"
-    style="background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px), radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px); background-size: 200px 200px, 150px 150px, 100px 100px; background-position: 0 0, 40px 60px, 80px 30px;"
-  >
-  </div>
-
-  <div class="relative z-10 p-4 sm:p-8">
+  <!-- Nav -->
+  <div class="relative z-10 px-4 pt-4 sm:px-8">
     <Topbar />
+  </div>
 
-    <!-- Hero section -->
-    <div class="mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-24 text-center sm:py-32 lg:py-40">
-      <h1
-        class="mb-6 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 bg-clip-text text-5xl leading-tight font-bold text-transparent sm:text-6xl lg:text-7xl"
-      >
-        10x Astro Starter
-      </h1>
-      <p class="mb-10 max-w-2xl text-lg text-blue-100/70 sm:text-xl">
-        A production-ready starter with authentication, modern tooling, and a cosmic developer experience.
-      </p>
-      <div class="flex flex-col gap-4 sm:flex-row">
-        <a
-          href="/auth/signin"
-          class="inline-flex items-center justify-center rounded-lg bg-purple-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-purple-500"
-        >
-          Sign In
-        </a>
-        <a
-          href="/auth/signup"
-          class="inline-flex items-center justify-center rounded-lg border border-white/20 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-white/10"
-        >
-          Sign Up
-        </a>
-      </div>
+  <!-- Hero content — centered per Design.md -->
+  <div class="relative z-10 mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-24 text-center sm:py-32 lg:py-40">
+    <h1 class="mb-6 text-5xl leading-tight font-semibold sm:text-6xl lg:text-[72px] lg:leading-[1.08] lg:tracking-[-1px]"
+      style="color: var(--dt-color-on-dark);">
+      Zdjęcia produktów,<br />które sprzedają
+    </h1>
+    <p class="mb-10 max-w-2xl text-lg sm:text-xl"
+      style="color: var(--dt-color-on-dark-muted);">
+      Omnilister AI przekształca zwykłe zdjęcia w profesjonalne wizualizacje dla Allegro, OLX i innych platform marketplace.
+    </p>
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <!-- button-primary: signature purple rectangle -->
+      <a href="/auth/signup"
+        class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium transition-colors"
+        style="background-color: var(--dt-color-primary); color: var(--dt-color-on-dark); border-radius: var(--dt-radius-md);">
+        Zacznij za darmo
+      </a>
+      <!-- button-secondary-on-dark: outlined -->
+      <a href="/auth/signin"
+        class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium transition-colors"
+        style="background: transparent; color: var(--dt-color-on-dark); border: 1px solid var(--dt-color-on-dark-muted); border-radius: var(--dt-radius-md);">
+        Zaloguj się
+      </a>
     </div>
+  </div>
+</div>
 
-    <!-- Feature cards -->
-    <div class="mx-auto grid max-w-4xl grid-cols-1 gap-6 px-4 pb-24 sm:grid-cols-3">
-      <div class="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mb-4 text-purple-300"
-        >
-          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <h3 class="mb-2 text-lg font-semibold text-white">Authentication Ready</h3>
-        <p class="text-sm leading-relaxed text-blue-100/60">
-          Built-in Supabase auth with sign in, sign up, and protected routes out of the box.
+<!-- Feature section — canvas white per Design.md -->
+<div style="background-color: var(--dt-color-canvas); border-top: 1px solid var(--dt-color-hairline);">
+  <div class="mx-auto max-w-5xl px-4 py-20 sm:px-8">
+    <h2 class="mb-12 text-center text-3xl font-semibold tracking-[-0.5px]"
+      style="color: var(--dt-color-ink);">
+      Jak to działa
+    </h2>
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+
+      <!-- card-tint-lavender -->
+      <div class="p-6" style="background-color: var(--dt-color-tint-lavender); border-radius: var(--dt-radius-lg);">
+        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg"
+          style="background-color: var(--dt-color-primary); border-radius: var(--dt-radius-md);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <h3 class="mb-2 text-lg font-semibold" style="color: var(--dt-color-charcoal);">Wgraj zdjęcia</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--dt-color-slate);">
+          Dodaj zdjęcia produktu z telefonu lub aparatu. Obsługujemy JPG, PNG i WebP.
         </p>
       </div>
 
-      <div class="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mb-4 text-purple-300"
-        >
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
-        </svg>
-        <h3 class="mb-2 text-lg font-semibold text-white">Modern Stack</h3>
-        <p class="text-sm leading-relaxed text-blue-100/60">
-          Astro 5, React 19, Tailwind 4, and TypeScript — the latest tools, ready to go.
+      <!-- card-tint-mint -->
+      <div class="p-6" style="background-color: var(--dt-color-tint-mint); border-radius: var(--dt-radius-lg);">
+        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg"
+          style="background-color: var(--dt-color-brand-green); border-radius: var(--dt-radius-md);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 17 12 22 22 17"/>
+            <polyline points="2 12 12 17 22 12"/>
+          </svg>
+        </div>
+        <h3 class="mb-2 text-lg font-semibold" style="color: var(--dt-color-charcoal);">Wybierz styl</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--dt-color-slate);">
+          Wybierz predefiniowany styl lub opisz własną wizję. AI dopasuje tło i oświetlenie.
         </p>
       </div>
 
-      <div class="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="mb-4 text-purple-300"
-        >
-          <polyline points="16 18 22 12 16 6"></polyline>
-          <polyline points="8 6 2 12 8 18"></polyline>
-        </svg>
-        <h3 class="mb-2 text-lg font-semibold text-white">Developer Experience</h3>
-        <p class="text-sm leading-relaxed text-blue-100/60">
-          ESLint, Prettier, and pre-commit hooks keep your codebase clean from day one.
+      <!-- card-tint-sky -->
+      <div class="p-6" style="background-color: var(--dt-color-tint-sky); border-radius: var(--dt-radius-lg);">
+        <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg"
+          style="background-color: var(--dt-color-link-blue); border-radius: var(--dt-radius-md);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <h3 class="mb-2 text-lg font-semibold" style="color: var(--dt-color-charcoal);">Pobierz rezultat</h3>
+        <p class="text-sm leading-relaxed" style="color: var(--dt-color-slate);">
+          Gotowe zdjęcia w kilka sekund. Idealne pod wymagania Allegro, OLX i Instagram.
         </p>
       </div>
+
     </div>
   </div>
 </div>

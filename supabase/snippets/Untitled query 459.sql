@@ -1,0 +1,1 @@
+SELECT features_text FROM objects LIMIT 1; 

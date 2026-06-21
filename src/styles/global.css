@@ -1,80 +1,106 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./design-tokens.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * shadcn/ui compatibility layer.
+ * All values reference design-tokens.css — do NOT hardcode colors here.
+ * To change the visual identity: update Design.md, then update design-tokens.css.
+ */
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Border radius — maps to dt-radius-lg (12px) as the shadcn base;
+     shadcn derives rounded-md (buttons) as calc(var(--radius) - 4px) = 8px ✓ */
+  --radius: var(--dt-radius-lg);
+
+  /* Surface */
+  --background:             var(--dt-color-canvas);
+  --foreground:             var(--dt-color-charcoal);
+  --card:                   var(--dt-color-canvas);
+  --card-foreground:        var(--dt-color-charcoal);
+  --popover:                var(--dt-color-canvas);
+  --popover-foreground:     var(--dt-color-charcoal);
+
+  /* Primary — Notion signature purple */
+  --primary:                var(--dt-color-primary);
+  --primary-foreground:     var(--dt-color-on-dark);
+
+  /* Secondary — Notion surface */
+  --secondary:              var(--dt-color-surface);
+  --secondary-foreground:   var(--dt-color-charcoal);
+
+  /* Muted */
+  --muted:                  var(--dt-color-surface);
+  --muted-foreground:       var(--dt-color-slate);
+
+  /* Accent — lavender tint */
+  --accent:                 var(--dt-color-tint-lavender);
+  --accent-foreground:      var(--dt-color-charcoal);
+
+  /* Destructive */
+  --destructive:            var(--dt-color-error);
+
+  /* Borders & inputs */
+  --border:                 var(--dt-color-hairline);
+  --input:                  var(--dt-color-hairline-strong);
+  --ring:                   var(--dt-color-primary);
+
+  /* Charts */
+  --chart-1:                var(--dt-color-primary);
+  --chart-2:                var(--dt-color-brand-green);
+  --chart-3:                var(--dt-color-brand-teal);
+  --chart-4:                var(--dt-color-brand-orange);
+  --chart-5:                var(--dt-color-brand-pink);
+
+  /* Sidebar */
+  --sidebar:                var(--dt-color-surface);
+  --sidebar-foreground:     var(--dt-color-charcoal);
+  --sidebar-primary:        var(--dt-color-primary);
+  --sidebar-primary-foreground: var(--dt-color-on-dark);
+  --sidebar-accent:         var(--dt-color-tint-lavender);
+  --sidebar-accent-foreground: var(--dt-color-charcoal);
+  --sidebar-border:         var(--dt-color-hairline);
+  --sidebar-ring:           var(--dt-color-primary);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background:             oklch(0.14 0 0);
+  --foreground:             oklch(0.97 0 0);
+  --card:                   oklch(0.18 0 0);
+  --card-foreground:        oklch(0.97 0 0);
+  --popover:                oklch(0.18 0 0);
+  --popover-foreground:     oklch(0.97 0 0);
+  --primary:                oklch(0.68 0.18 277);
+  --primary-foreground:     oklch(0.99 0 0);
+  --secondary:              oklch(0.22 0 0);
+  --secondary-foreground:   oklch(0.97 0 0);
+  --muted:                  oklch(0.22 0 0);
+  --muted-foreground:       oklch(0.65 0.007 80);
+  --accent:                 oklch(0.25 0.04 280);
+  --accent-foreground:      oklch(0.97 0 0);
+  --destructive:            oklch(0.65 0.20 25);
+  --border:                 oklch(1 0 0 / 10%);
+  --input:                  oklch(1 0 0 / 15%);
+  --ring:                   oklch(0.68 0.18 277);
+  --chart-1:                oklch(0.68 0.18 277);
+  --chart-2:                oklch(0.70 0.18 145);
+  --chart-3:                oklch(0.70 0.15 250);
+  --chart-4:                oklch(0.75 0.18 60);
+  --chart-5:                oklch(0.65 0.20 340);
+  --sidebar:                oklch(0.18 0 0);
+  --sidebar-foreground:     oklch(0.97 0 0);
+  --sidebar-primary:        oklch(0.68 0.18 277);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent:         oklch(0.25 0.04 280);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border:         oklch(1 0 0 / 10%);
+  --sidebar-ring:           oklch(0.68 0.18 277);
 }
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --color-background: var(--background);
@@ -108,7 +134,43 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Design token utilities available as Tailwind classes */
+  --color-brand-navy: var(--dt-color-brand-navy);
+  --color-on-dark: var(--dt-color-on-dark);
+  --color-charcoal: var(--dt-color-charcoal);
+  --color-slate: var(--dt-color-slate);
+  --color-steel: var(--dt-color-steel);
+  --color-tint-peach: var(--dt-color-tint-peach);
+  --color-tint-rose: var(--dt-color-tint-rose);
+  --color-tint-mint: var(--dt-color-tint-mint);
+  --color-tint-lavender: var(--dt-color-tint-lavender);
+  --color-tint-sky: var(--dt-color-tint-sky);
+  --color-tint-yellow: var(--dt-color-tint-yellow);
+  --color-tint-yellow-bold: var(--dt-color-tint-yellow-bold);
+  --font-sans: var(--dt-font-family);
 }
+
+@utility hero-band {
+  background-color: var(--dt-color-brand-navy);
+  color: var(--dt-color-on-dark);
+  padding-block: var(--dt-space-hero);
+}
+
+@utility card-base {
+  background-color: var(--dt-color-canvas);
+  border-radius: var(--dt-radius-lg);
+  border: 1px solid var(--dt-color-hairline);
+  box-shadow: var(--dt-shadow-2);
+}
+
+@utility card-tint-peach  { background-color: var(--dt-color-tint-peach); }
+@utility card-tint-rose   { background-color: var(--dt-color-tint-rose); }
+@utility card-tint-mint   { background-color: var(--dt-color-tint-mint); }
+@utility card-tint-lavender { background-color: var(--dt-color-tint-lavender); }
+@utility card-tint-sky    { background-color: var(--dt-color-tint-sky); }
+@utility card-tint-yellow { background-color: var(--dt-color-tint-yellow); }
+@utility card-tint-yellow-bold { background-color: var(--dt-color-tint-yellow-bold); }
 
 @utility bg-cosmic {
   background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
@@ -119,6 +181,7 @@
     @apply border-border outline-ring/50;
   }
   body {
+    font-family: var(--dt-font-family);
     @apply bg-background text-foreground;
   }
 }

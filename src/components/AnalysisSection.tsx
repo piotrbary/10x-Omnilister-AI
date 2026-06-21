@@ -213,6 +213,7 @@ export default function AnalysisSection({
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [featuresError, setFeaturesError] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   // ── checkbox toggle ──────────────────────────────────────────────────
 
@@ -261,17 +262,32 @@ export default function AnalysisSection({
           features_text?: string;
           scores?: PhotoScoreResult[];
           error?: string;
+          debug?: string[];
         };
 
+        if (data.debug) setDebugLogs(data.debug);
+
         if (!res.ok) {
-          // All photos failed — mark each as error
-          setPhotoStates((prev) => {
-            const next = { ...prev };
-            for (const id of idsToAnalyze) {
-              next[id] = { status: "error", message: data.error ?? "Unknown error" };
-            }
-            return next;
-          });
+          // Use per-photo errors if available, otherwise fall back to global error
+          const perPhotoErrors = data.scores ?? [];
+          if (perPhotoErrors.length > 0) {
+            setPhotoStates((prev) => {
+              const next = { ...prev };
+              for (const result of perPhotoErrors) {
+                const msg = "error" in result ? result.error : (data.error ?? "Analysis failed");
+                next[result.photo_id] = { status: "error", message: msg };
+              }
+              return next;
+            });
+          } else {
+            setPhotoStates((prev) => {
+              const next = { ...prev };
+              for (const id of idsToAnalyze) {
+                next[id] = { status: "error", message: data.error ?? "Unknown error" };
+              }
+              return next;
+            });
+          }
           return;
         }
 
@@ -501,6 +517,21 @@ export default function AnalysisSection({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Debug log panel */}
+      {debugLogs.length > 0 && (
+        <details className="rounded-xl border border-white/10 bg-black/20">
+          <summary className="cursor-pointer px-4 py-2 text-xs text-white/40 hover:text-white/60 select-none">
+            Debug logs ({debugLogs.length} lines)
+          </summary>
+          <textarea
+            readOnly
+            className="block w-full resize-y rounded-b-xl bg-black/30 p-3 font-mono text-xs text-white/50 focus:outline-none"
+            rows={12}
+            value={debugLogs.join("\n")}
+          />
+        </details>
       )}
     </div>
   );

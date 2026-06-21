@@ -2,36 +2,40 @@
 const { user } = Astro.locals;
 ---
 
-<div
-  class="mb-4 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80"
->
-  {
-    user ? (
-      <>
-        <span class="text-blue-100/70">{user.email}</span>
-        <div class="flex items-center gap-3">
-          <a href="/dashboard" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
-            Dashboard
-          </a>
-          <form method="POST" action="/api/auth/signout">
-            <button type="submit" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </>
-    ) : (
-      <>
-        <span class="text-blue-100/70">Not signed in</span>
-        <div class="flex gap-3">
-          <a href="/auth/signin" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
-            Sign in
-          </a>
-          <a href="/auth/signup" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
-            Sign up
-          </a>
-        </div>
-      </>
-    )
-  }
-</div>
+<!-- Notion-style top nav — designed for dark (brand-navy) surfaces -->
+<nav class="flex items-center justify-between px-2 py-2"
+  style="border-bottom: 1px solid var(--dt-color-on-dark-muted); font-size: var(--dt-text-body-sm-size);">
+
+  <a href="/" class="font-semibold" style="color: var(--dt-color-on-dark);">
+    Omnilister AI
+  </a>
+
+  {user ? (
+    <div class="flex items-center gap-4">
+      <span style="color: var(--dt-color-on-dark-muted);">{user.email}</span>
+      <a href="/objects" style="color: var(--dt-color-on-dark); font-weight: 500;">
+        Moje obiekty
+      </a>
+      <form method="POST" action="/api/auth/signout">
+        <button type="submit"
+          class="px-4 py-2 transition-opacity hover:opacity-80"
+          style="background: transparent; color: var(--dt-color-on-dark); border: 1px solid var(--dt-color-on-dark-muted); border-radius: var(--dt-radius-md);">
+          Wyloguj
+        </button>
+      </form>
+    </div>
+  ) : (
+    <div class="flex items-center gap-3">
+      <a href="/auth/signin"
+        class="px-4 py-2 transition-opacity hover:opacity-80"
+        style="color: var(--dt-color-on-dark); font-weight: 500;">
+        Zaloguj
+      </a>
+      <a href="/auth/signup"
+        class="px-4 py-2 transition-opacity hover:opacity-80"
+        style="background-color: var(--dt-color-primary); color: var(--dt-color-on-dark); border-radius: var(--dt-radius-md); font-weight: 500;">
+        Rejestracja
+      </a>
+    </div>
+  )}
+</nav>

@@ -84,11 +84,15 @@ interface GptCallResult {
 async function _callGptVision(
   signedUrl: string,
   category: ObjectCategory,
+  logs: string[],
 ): Promise<GptCallResult> {
   let lastError: unknown;
+  const keyPreview = (OPENROUTER_API_KEY ?? "").slice(0, 8) || "(missing)";
 
   for (let attempt = 0; attempt <= aiConfig.maxRetries; attempt++) {
     try {
+      logs.push(`[vision #${attempt + 1}] POST ${aiConfig.baseUrl}/chat/completions model=${aiConfig.visionModel} key=${keyPreview}... url_len=${signedUrl.length}`);
+
       const response = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
@@ -111,14 +115,22 @@ async function _callGptVision(
         }),
       });
 
+      logs.push(`[vision #${attempt + 1}] response status=${response.status} ok=${response.ok}`);
+
       if (!response.ok) {
-        throw new Error(`OpenRouter ${response.status}: ${response.statusText}`);
+        const errorText = await response.text().catch(() => "");
+        logs.push(`[vision #${attempt + 1}] ERROR body=${errorText.slice(0, 500)}`);
+        throw new Error(
+          `OpenRouter vision ${response.status}: ${errorText.slice(0, 400) || response.statusText || "(no body)"}`,
+        );
       }
 
       const data = (await response.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
       const content = data?.choices?.[0]?.message?.content;
+      logs.push(`[vision #${attempt + 1}] content_len=${content?.length ?? 0} preview=${(content ?? "").slice(0, 120)}`);
+
       if (!content) throw new Error("Empty content from GPT-4o response");
 
       let gpt: GptScoringResponse;
@@ -152,9 +164,11 @@ async function _callGptVision(
           : category
       ) as ObjectCategory;
 
+      logs.push(`[vision #${attempt + 1}] SUCCESS overall=${overall} category=${gptCategory}`);
       return { snapshot, gptCategory, featuresText: gpt.features_text ?? "" };
     } catch (err) {
       lastError = err;
+      logs.push(`[vision #${attempt + 1}] CAUGHT ${String(err).slice(0, 300)}`);
     }
   }
 
@@ -165,7 +179,7 @@ export async function scorePhoto(
   signedUrl: string,
   category: ObjectCategory,
 ): Promise<QualityScoreSnapshot> {
-  const { snapshot } = await _callGptVision(signedUrl, category);
+  const { snapshot } = await _callGptVision(signedUrl, category, []);
   return snapshot;
 }
 
@@ -175,6 +189,8 @@ export async function analyzeObject(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<ObjectAnalysisResult> {
+  const debugLogs: string[] = [];
+
   const { data: photos, error: photosErr } = await supabase
     .from("photos")
     .select("id, original_url")
@@ -194,13 +210,16 @@ export async function analyzeObject(
     .single();
 
   const knownCategory = (objectRow?.category as ObjectCategory | null) ?? "item";
+  debugLogs.push(`[setup] photos=${photos.length} category=${knownCategory} objectId=${objectId}`);
 
   // Generate signed URLs (original-photos bucket is private)
   const signedUrlMap = new Map<string, string>();
   for (const photo of photos) {
-    const { data: signed } = await supabase.storage
+    const { data: signed, error: signedErr } = await supabase.storage
       .from("original-photos")
       .createSignedUrl(photo.original_url, 60);
+    const gotSigned = !!signed?.signedUrl;
+    debugLogs.push(`[signedUrl photo=${photo.id.slice(0, 8)}] ok=${gotSigned} err=${signedErr?.message ?? "none"} original_url_len=${photo.original_url.length}`);
     signedUrlMap.set(photo.id, signed?.signedUrl ?? photo.original_url);
   }
 
@@ -208,7 +227,8 @@ export async function analyzeObject(
   const settled = await Promise.allSettled(
     photos.map(async (photo) => {
       const url = signedUrlMap.get(photo.id) ?? photo.original_url;
-      const result = await _callGptVision(url, knownCategory);
+      debugLogs.push(`[photo ${photo.id.slice(0, 8)}] calling GPT vision url_len=${url.length}`);
+      const result = await _callGptVision(url, knownCategory, debugLogs);
       return { result };
     }),
   );
@@ -289,5 +309,6 @@ export async function analyzeObject(
     category: firstCategory ?? knownCategory,
     features_text: firstFeaturesText ?? "",
     photoScores,
+    debugLogs,
   };
 }

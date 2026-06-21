@@ -27,6 +27,7 @@ export interface ObjectAnalysisResult {
   category: ObjectCategory;
   features_text: string;
   photoScores: PhotoScoreResult[];
+  debugLogs: string[];
 }
 
 export const AnalyzeRequestSchema = z.object({

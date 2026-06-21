@@ -33,7 +33,7 @@ export const GET: APIRoute = async (context) => {
   const { data, error } = await supabase
     .from("transformations")
     .select(
-      "id, status, draft_url, result_url, score_before, score_after, error_message, retry_count",
+      "id, photo_id, status, result_url, score_before, score_after, error_message, retry_count",
     )
     .in("id", ids)
     .eq("user_id", user.id);
@@ -50,8 +50,8 @@ export const GET: APIRoute = async (context) => {
       const row = rowById.get(id)!;
       return {
         id: row.id,
+        photo_id: row.photo_id,
         status: row.status,
-        draft_url: row.draft_url,
         result_url: row.result_url,
         score_before: row.score_before as unknown as QualityScoreSnapshot | null,
         score_after: row.score_after as unknown as QualityScoreSnapshot | null,

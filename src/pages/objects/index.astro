@@ -31,49 +31,70 @@ if (supabase) {
 }
 ---
 
-<Layout title="My Objects">
-  <div class="bg-cosmic min-h-screen p-6 text-white">
-    <div class="mx-auto max-w-4xl">
-      <div class="mb-8 flex items-center justify-between">
-        <h1 class="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-3xl font-bold text-transparent">
-          My Objects
-        </h1>
-        <div class="flex items-center gap-3">
-          <span class="text-sm text-blue-100/60">{user.email}</span>
+<Layout title="Moje obiekty — Omnilister AI">
+  <div class="min-h-screen" style="background-color: var(--dt-color-canvas);">
+
+    <!-- App top nav — light surface -->
+    <header style="background-color: var(--dt-color-canvas); border-bottom: 1px solid var(--dt-color-hairline);">
+      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+        <a href="/" class="text-sm font-semibold" style="color: var(--dt-color-ink);">Omnilister AI</a>
+        <div class="flex items-center gap-4">
+          <span class="text-sm" style="color: var(--dt-color-steel);">{user.email}</span>
           <form method="POST" action="/api/auth/signout">
-            <button
-              type="submit"
-              class="rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm transition-colors hover:bg-white/20"
-            >
-              Sign out
+            <button type="submit"
+              class="px-3 py-1.5 text-sm transition-opacity hover:opacity-70"
+              style="color: var(--dt-color-slate); border: 1px solid var(--dt-color-hairline); border-radius: var(--dt-radius-md);">
+              Wyloguj
             </button>
           </form>
         </div>
       </div>
+    </header>
 
-      <div class="mb-6">
+    <!-- Page content -->
+    <main class="mx-auto max-w-5xl px-6 py-10">
+
+      <!-- Page header -->
+      <div class="mb-8 flex items-center justify-between">
+        <h1 class="text-3xl font-semibold tracking-[-0.5px]" style="color: var(--dt-color-ink);">
+          Moje obiekty
+        </h1>
+      </div>
+
+      <!-- Create form -->
+      <div class="mb-8 p-6" style="background-color: var(--dt-color-surface); border-radius: var(--dt-radius-lg); border: 1px solid var(--dt-color-hairline);">
         <CreateObjectForm client:load />
       </div>
 
-      {
-        objects.length === 0 ? (
-          <div class="rounded-2xl border border-white/10 bg-white/10 p-12 text-center backdrop-blur-xl">
-            <p class="text-blue-100/60">No objects yet — create your first one above.</p>
-          </div>
-        ) : (
-          <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-            {objects.map((obj) => (
-              <a
-                href={`/objects/${obj.id}`}
-                class="group rounded-xl border border-white/10 bg-white/10 p-5 backdrop-blur-xl transition-colors hover:bg-white/20"
-              >
-                <p class="font-semibold group-hover:text-purple-200">{obj.name}</p>
-                <p class="mt-1 text-xs text-blue-100/50">{new Date(obj.createdAt).toLocaleDateString()}</p>
-              </a>
-            ))}
-          </div>
-        )
-      }
-    </div>
+      <!-- Object list -->
+      {objects.length === 0 ? (
+        <div class="py-16 text-center" style="border: 1px dashed var(--dt-color-hairline); border-radius: var(--dt-radius-lg);">
+          <p class="text-sm" style="color: var(--dt-color-slate);">
+            Brak obiektów — utwórz pierwszy powyżej.
+          </p>
+        </div>
+      ) : (
+        <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {objects.map((obj) => (
+            <a
+              href={`/objects/${obj.id}`}
+              class="block p-5 transition-shadow hover:shadow-[var(--dt-shadow-2)]"
+              style="background-color: var(--dt-color-canvas); border: 1px solid var(--dt-color-hairline); border-radius: var(--dt-radius-lg); box-shadow: var(--dt-shadow-1);"
+            >
+              <p class="font-semibold" style="color: var(--dt-color-ink);">{obj.name}</p>
+              {obj.category && (
+                <span class="mt-2 inline-block px-2 py-0.5 text-xs font-semibold"
+                  style="background-color: var(--dt-color-tint-lavender); color: var(--dt-color-brand-purple-800); border-radius: var(--dt-radius-xs);">
+                  {obj.category}
+                </span>
+              )}
+              <p class="mt-2 text-xs" style="color: var(--dt-color-steel);">
+                {new Date(obj.createdAt).toLocaleDateString("pl-PL")}
+              </p>
+            </a>
+          ))}
+        </div>
+      )}
+    </main>
   </div>
 </Layout>

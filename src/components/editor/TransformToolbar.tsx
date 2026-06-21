@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { BookmarkCheck } from "lucide-react";
 import { PRESET_STYLES } from "@/lib/transformation-styles";
 import { TRANSFORMATION_MODELS } from "@/lib/config";
 import type { ObjectCategory } from "@/lib/config";
@@ -8,6 +9,11 @@ const CATEGORY_OPTIONS: { value: ObjectCategory; label: string }[] = [
   { value: "real-estate", label: "Nieruchomość" },
   { value: "item", label: "Przedmiot" },
 ];
+
+export interface ToolbarHandle {
+  applyPrompt: (text: string) => void;
+  getCurrentPrompt: () => string;
+}
 
 interface TransformToolbarProps {
   category: ObjectCategory;
@@ -21,23 +27,38 @@ interface TransformToolbarProps {
   onSave: () => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
+  onOpenPrompts: () => void;
 }
 
-export default function TransformToolbar({
-  category,
-  objectName,
-  selectedStyleKey,
-  onStyleSelect,
-  onCategoryChange,
-  onTransform,
-  isTransforming,
-  isSaveable,
-  onSave,
-  selectedModel,
-  onModelChange,
-}: TransformToolbarProps) {
+const TransformToolbar = forwardRef<ToolbarHandle, TransformToolbarProps>(function TransformToolbar(
+  {
+    category,
+    objectName,
+    selectedStyleKey,
+    onStyleSelect,
+    onCategoryChange,
+    onTransform,
+    isTransforming,
+    isSaveable,
+    onSave,
+    selectedModel,
+    onModelChange,
+    onOpenPrompts,
+  },
+  ref,
+) {
   const [showInstructions, setShowInstructions] = useState(false);
   const [instructions, setInstructions] = useState("");
+
+  useImperativeHandle(ref, () => ({
+    applyPrompt(text: string) {
+      setInstructions(text);
+      setShowInstructions(true);
+    },
+    getCurrentPrompt() {
+      return instructions;
+    },
+  }));
 
   const presets = PRESET_STYLES[category];
   const selectedPreset = presets.find((p) => p.key === selectedStyleKey) ?? null;
@@ -139,24 +160,6 @@ export default function TransformToolbar({
           </button>
         ))}
 
-        {/* Biblioteka link */}
-        <a
-          href="/styles"
-          style={{
-            padding: "5px 10px",
-            borderRadius: "6px",
-            border: "1px solid rgba(255,255,255,0.12)",
-            backgroundColor: "rgba(255,255,255,0.04)",
-            color: "rgba(255,255,255,0.45)",
-            fontSize: "12px",
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          Biblioteka
-        </a>
-
         {/* Instructions toggle */}
         <button
           onClick={() => setShowInstructions(!showInstructions)}
@@ -172,7 +175,27 @@ export default function TransformToolbar({
             flexShrink: 0,
           }}
         >
-          + Instrukcje
+          + Prompt
+        </button>
+
+        {/* Saved prompts drawer */}
+        <button
+          onClick={onOpenPrompts}
+          title="Moje style i prompty"
+          style={{
+            padding: "5px 8px",
+            borderRadius: "6px",
+            border: "1px solid rgba(255,255,255,0.12)",
+            backgroundColor: "transparent",
+            color: "rgba(255,255,255,0.45)",
+            fontSize: "12px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            flexShrink: 0,
+          }}
+        >
+          <BookmarkCheck size={14} />
         </button>
 
         {divider}
@@ -201,7 +224,10 @@ export default function TransformToolbar({
               </option>
             ))}
           </optgroup>
-          <optgroup label="Ulepszają prompt → Gemini generuje (2-step)" style={{ backgroundColor: "#1a1a2e" }}>
+          <optgroup
+            label="Ulepszają prompt → Gemini generuje (2-step)"
+            style={{ backgroundColor: "#1a1a2e" }}
+          >
             {TRANSFORMATION_MODELS.filter((m) => !m.supportsImageOutput).map((m) => (
               <option key={m.id} value={m.id} style={{ backgroundColor: "#1a1a2e" }}>
                 {m.label}
@@ -235,7 +261,7 @@ export default function TransformToolbar({
           {isTransforming ? "Transformuję…" : "▶ Zastosuj"}
         </button>
 
-        {/* Save button */}
+        {/* Save object button */}
         {isSaveable && (
           <button
             onClick={onSave}
@@ -257,13 +283,16 @@ export default function TransformToolbar({
         )}
       </div>
 
-      {/* Expandable instructions */}
+      {/* Expandable prompt editor */}
       {showInstructions && (
         <div
           style={{
             padding: "8px 20px 10px",
             backgroundColor: "var(--dt-color-brand-navy)",
             borderBottom: "1px solid rgba(255,255,255,0.08)",
+            display: "flex",
+            gap: "8px",
+            alignItems: "flex-start",
           }}
         >
           <textarea
@@ -272,7 +301,7 @@ export default function TransformToolbar({
             placeholder="Zmodyfikuj prompt lub dodaj własne instrukcje do stylu…"
             rows={2}
             style={{
-              width: "100%",
+              flex: 1,
               resize: "none",
               borderRadius: "6px",
               border: "1px solid rgba(255,255,255,0.12)",
@@ -284,8 +313,28 @@ export default function TransformToolbar({
               boxSizing: "border-box",
             }}
           />
+          <button
+            onClick={onOpenPrompts}
+            title="Zapisz lub wczytaj styl"
+            style={{
+              padding: "6px 10px",
+              borderRadius: "6px",
+              border: "1px solid rgba(255,255,255,0.15)",
+              backgroundColor: "rgba(255,255,255,0.06)",
+              color: "rgba(255,255,255,0.5)",
+              fontSize: "12px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              alignSelf: "stretch",
+            }}
+          >
+            Style →
+          </button>
         </div>
       )}
     </div>
   );
-}
+});
+
+export default TransformToolbar;

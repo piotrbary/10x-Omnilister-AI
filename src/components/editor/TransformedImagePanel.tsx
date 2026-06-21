@@ -5,6 +5,10 @@ interface TransformedImagePanelProps {
   error: string | null;
   previewMode: "after" | "before-after";
   onTogglePreview: () => void;
+  currentJobId: string | null;
+  resultSaved: boolean;
+  onSaveResult: () => void;
+  onClearResult: () => void;
 }
 
 export default function TransformedImagePanel({
@@ -14,7 +18,13 @@ export default function TransformedImagePanel({
   error,
   previewMode,
   onTogglePreview,
+  currentJobId,
+  resultSaved,
+  onSaveResult,
+  onClearResult,
 }: TransformedImagePanelProps) {
+  const hasResult = !isTransforming && error === null && resultUrl !== null;
+
   return (
     <div
       className="editor-panel"
@@ -28,6 +38,7 @@ export default function TransformedImagePanel({
         position: "relative",
       }}
     >
+      {/* Transforming spinner */}
       {isTransforming && (
         <div
           style={{
@@ -57,6 +68,7 @@ export default function TransformedImagePanel({
         </div>
       )}
 
+      {/* Error */}
       {!isTransforming && error !== null && (
         <div
           style={{
@@ -71,76 +83,196 @@ export default function TransformedImagePanel({
           <p style={{ fontSize: "14px", color: "#dc2626", marginBottom: "12px" }}>
             Transformacja nie powiodła się. Spróbuj ponownie.
           </p>
-          <button
-            onClick={onTogglePreview}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "var(--dt-radius-md)",
-              backgroundColor: "#dc2626",
-              color: "#fff",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            Spróbuj ponownie
-          </button>
         </div>
       )}
 
-      {!isTransforming && error === null && resultUrl !== null && previewMode === "after" && (
-        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
-          <img src={resultUrl} alt="Wynik transformacji" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              onClick={onTogglePreview}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "var(--dt-radius-md)",
-                border: "1px solid var(--dt-color-hairline)",
-                backgroundColor: "var(--dt-color-canvas)",
-                color: "var(--dt-color-slate)",
-                fontSize: "12px",
-                cursor: "pointer",
-              }}
-            >
-              Porównaj
-            </button>
-          </div>
+      {/* Result: after mode */}
+      {hasResult && previewMode === "after" && (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <img
+            src={resultUrl!}
+            alt="Wynik transformacji"
+            style={{ flex: 1, width: "100%", objectFit: "contain", minHeight: 0 }}
+          />
+          <ResultActions
+            currentJobId={currentJobId}
+            resultSaved={resultSaved}
+            onSaveResult={onSaveResult}
+            onClearResult={onClearResult}
+            onTogglePreview={onTogglePreview}
+            compareLabel="Porównaj"
+          />
         </div>
       )}
 
-      {!isTransforming && error === null && resultUrl !== null && previewMode === "before-after" && (
-        <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", gap: "8px", flex: 1 }}>
-            <img src={originalUrl ?? ""} alt="Przed" style={{ flex: 1, objectFit: "contain", minWidth: 0 }} />
-            <img src={resultUrl} alt="Po" style={{ flex: 1, objectFit: "contain", minWidth: 0 }} />
+      {/* Result: before-after mode */}
+      {hasResult && previewMode === "before-after" && (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <div style={{ display: "flex", gap: "8px", flex: 1, minHeight: 0 }}>
+            <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+              <img
+                src={originalUrl ?? ""}
+                alt="Przed"
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  left: "6px",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.7)",
+                  backgroundColor: "rgba(0,0,0,0.45)",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                PRZED
+              </span>
+            </div>
+            <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+              <img
+                src={resultUrl!}
+                alt="Po"
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  left: "6px",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "rgba(255,255,255,0.7)",
+                  backgroundColor: "rgba(0,0,0,0.45)",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                PO
+              </span>
+            </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              onClick={onTogglePreview}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "var(--dt-radius-md)",
-                border: "1px solid var(--dt-color-hairline)",
-                backgroundColor: "var(--dt-color-canvas)",
-                color: "var(--dt-color-slate)",
-                fontSize: "12px",
-                cursor: "pointer",
-              }}
-            >
-              Widok po
-            </button>
-          </div>
+          <ResultActions
+            currentJobId={currentJobId}
+            resultSaved={resultSaved}
+            onSaveResult={onSaveResult}
+            onClearResult={onClearResult}
+            onTogglePreview={onTogglePreview}
+            compareLabel="Widok po"
+          />
         </div>
       )}
 
+      {/* Empty state */}
       {!isTransforming && error === null && resultUrl === null && (
         <p style={{ fontSize: "14px", color: "var(--dt-color-steel)", textAlign: "center" }}>
           Wybierz styl i kliknij Zastosuj
         </p>
       )}
+    </div>
+  );
+}
+
+interface ResultActionsProps {
+  currentJobId: string | null;
+  resultSaved: boolean;
+  onSaveResult: () => void;
+  onClearResult: () => void;
+  onTogglePreview: () => void;
+  compareLabel: string;
+}
+
+function ResultActions({
+  currentJobId,
+  resultSaved,
+  onSaveResult,
+  onClearResult,
+  onTogglePreview,
+  compareLabel,
+}: ResultActionsProps) {
+  return (
+    <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", flexShrink: 0 }}>
+      <button
+        onClick={onTogglePreview}
+        style={{
+          padding: "5px 10px",
+          borderRadius: "var(--dt-radius-md)",
+          border: "1px solid var(--dt-color-hairline)",
+          backgroundColor: "var(--dt-color-canvas)",
+          color: "var(--dt-color-slate)",
+          fontSize: "12px",
+          cursor: "pointer",
+        }}
+      >
+        {compareLabel}
+      </button>
+
+      {currentJobId && !resultSaved && (
+        <button
+          onClick={onSaveResult}
+          style={{
+            padding: "5px 12px",
+            borderRadius: "var(--dt-radius-md)",
+            border: "none",
+            backgroundColor: "#7c3aed",
+            color: "#fff",
+            fontSize: "12px",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Zapisz wynik
+        </button>
+      )}
+
+      {resultSaved && (
+        <span
+          style={{
+            padding: "5px 12px",
+            fontSize: "12px",
+            color: "#10b981",
+            fontWeight: 600,
+          }}
+        >
+          Zapisano ✓
+        </span>
+      )}
+
+      <button
+        onClick={onClearResult}
+        title="Wyczyść wynik transformacji"
+        style={{
+          padding: "5px 10px",
+          borderRadius: "var(--dt-radius-md)",
+          border: "1px solid var(--dt-color-hairline)",
+          backgroundColor: "var(--dt-color-canvas)",
+          color: "var(--dt-color-steel)",
+          fontSize: "12px",
+          cursor: "pointer",
+        }}
+      >
+        Wyczyść
+      </button>
     </div>
   );
 }

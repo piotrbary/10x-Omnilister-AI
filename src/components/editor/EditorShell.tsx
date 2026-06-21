@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { MOCK_SCORE_BEFORE } from "@/data/mockEditorData";
 import type { ObjectRecord, PhotoRecord } from "@/types/objects";
 import type { ObjectCategory } from "@/lib/config";
@@ -9,9 +9,11 @@ import OriginalImagePanel from "./OriginalImagePanel";
 import type { UploadItem } from "./OriginalImagePanel";
 import TransformedImagePanel from "./TransformedImagePanel";
 import TransformToolbar from "./TransformToolbar";
+import type { ToolbarHandle } from "./TransformToolbar";
 import ScoreSidebar from "./ScoreSidebar";
 import StatusBar from "./StatusBar";
 import type { StatusEntry } from "./StatusBar";
+import PromptDrawer from "./PromptDrawer";
 
 interface EditorShellProps {
   objectId: string | null;
@@ -33,6 +35,8 @@ const EMPTY_OBJECT: ObjectRecord = {
 };
 
 export default function EditorShell({ objectId: initialObjectId, userEmail }: EditorShellProps) {
+  const toolbarRef = useRef<ToolbarHandle>(null);
+
   const [objectId, setObjectId] = useState<string | null>(initialObjectId);
   const [object, setObject] = useState<ObjectRecord>(EMPTY_OBJECT);
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
@@ -44,27 +48,26 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
   const [creatingObject, setCreatingObject] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [resultSaved, setResultSaved] = useState(false);
   const [scoreAfter, setScoreAfter] = useState<QualityScoreSnapshot | null>(null);
   const [previewMode, setPreviewMode] = useState<"after" | "before-after">("after");
   const [isSaveable, setIsSaveable] = useState(!!initialObjectId);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showSaveResultModal, setShowSaveResultModal] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingResult, setSavingResult] = useState(false);
   const [status, setStatus] = useState<StatusEntry>({ type: "idle" });
+  const [showPromptDrawer, setShowPromptDrawer] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(
     TRANSFORMATION_MODELS[0]?.id ?? aiConfig.transformationModel,
   );
 
-  /* Computed status — uploads and creation take priority, then explicit status,
-     then contextual hints based on editor state */
   const displayStatus = useMemo<StatusEntry>(() => {
-    if (creatingObject) {
-      return { type: "progress", message: "Tworzenie obiektu w bazie danych…" };
-    }
+    if (creatingObject) return { type: "progress", message: "Tworzenie obiektu w bazie danych…" };
     if (uploads.length > 0) {
-      const avg = Math.round(
-        uploads.reduce((s, u) => s + u.progress, 0) / uploads.length,
-      );
+      const avg = Math.round(uploads.reduce((s, u) => s + u.progress, 0) / uploads.length);
       const label =
         uploads.length === 1
           ? `Wgrywanie: ${uploads[0]!.name}`
@@ -72,8 +75,6 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       return { type: "progress", message: label, percent: avg };
     }
     if (status.type !== "idle") return status;
-
-    // Contextual guidance in idle state
     if (photos.length === 0) {
       return {
         type: "info",
@@ -83,10 +84,14 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
     if (!selectedStyleKey) {
       return {
         type: "info",
-        message: "Zdjęcie wgrane — wybierz styl transformacji (Showroom, Outdoor…) i kliknij ▶ Zastosuj",
+        message:
+          "Zdjęcie wgrane — wybierz styl transformacji (Showroom, Outdoor…) i kliknij ▶ Zastosuj",
       };
     }
-    return { type: "idle", message: "Gotowy — kliknij ▶ Zastosuj, aby przetransformować zdjęcie" };
+    return {
+      type: "idle",
+      message: "Gotowy — kliknij ▶ Zastosuj, aby przetransformować zdjęcie",
+    };
   }, [creatingObject, uploads, status, photos.length, selectedStyleKey]);
 
   /* Load existing object + photos on mount */
@@ -108,7 +113,9 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Upload helpers ──────────────────────────────────────────────────── */
@@ -119,8 +126,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
 
     const updateProgress = (p: number) =>
       setUploads((prev) => prev.map((u) => (u.id === uploadId ? { ...u, progress: p } : u)));
-    const removeUpload = () =>
-      setUploads((prev) => prev.filter((u) => u.id !== uploadId));
+    const removeUpload = () => setUploads((prev) => prev.filter((u) => u.id !== uploadId));
 
     try {
       const urlRes = await fetch(`/api/objects/${objId}/photos/upload-url`, {
@@ -158,7 +164,9 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
               const b = JSON.parse(xhr.responseText) as { message?: string; error?: string };
               if (b.message) msg = b.message;
               else if (b.error) msg = b.error;
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
             reject(new Error(msg));
           }
         };
@@ -189,7 +197,6 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       updateProgress(100);
       setTimeout(removeUpload, 800);
 
-      // Add photo and select it — avoid calling setState inside setState updater
       const newPhoto = confirmData.photo!;
       setPhotos((prev) => [...prev, newPhoto]);
       setSelectedPhotoIndex(nextIndex);
@@ -254,11 +261,32 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       setCreatingObject(false);
     }
 
-    // Upload files, assigning each a sequential photo index
     const startIndex = photos.length;
     validFiles.forEach((file, i) => {
       void uploadSingleFile(file, currentObjectId!, startIndex + i);
     });
+  }
+
+  /* ── Delete photo ────────────────────────────────────────────────────── */
+
+  async function handleDeletePhoto(photoId: string) {
+    if (!objectId) return;
+    try {
+      const res = await fetch(`/api/objects/${objectId}/photos/${photoId}`, { method: "DELETE" });
+      if (res.ok) {
+        setPhotos((prev) => {
+          const next = prev.filter((p) => p.id !== photoId);
+          // Keep selected index in bounds
+          setSelectedPhotoIndex((i) => Math.min(i, Math.max(0, next.length - 1)));
+          return next;
+        });
+      } else {
+        const data = (await res.json()) as { error?: string };
+        setStatus({ type: "error", message: data.error ?? "Nie można usunąć zdjęcia" });
+      }
+    } catch {
+      setStatus({ type: "error", message: "Błąd sieci podczas usuwania zdjęcia" });
+    }
   }
 
   /* ── Transform ───────────────────────────────────────────────────────── */
@@ -267,7 +295,6 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
     const selectedPhoto = photos[selectedPhotoIndex] ?? photos[0];
 
     if (!objectId || !selectedPhoto) {
-      // No photo yet — show guidance, don't block
       setStatus({
         type: "info",
         message: "Najpierw wgraj zdjęcie — przeciągnij je do lewego panelu lub kliknij +",
@@ -277,6 +304,8 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
 
     setIsTransforming(true);
     setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
     setScoreAfter(null);
     setStatus({ type: "progress", message: "Transformacja AI w toku… może potrwać 15–30 sekund" });
 
@@ -295,15 +324,14 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
 
       const data = (await res.json()) as { jobs?: TransformationJob[]; error?: string };
 
-      if (!res.ok) {
-        throw new Error(data.error ?? "Transformacja nie powiodła się");
-      }
+      if (!res.ok) throw new Error(data.error ?? "Transformacja nie powiodła się");
 
       const job = data.jobs?.[0];
       if (!job) throw new Error("Serwer nie zwrócił danych transformacji");
 
       if (job.status === "full_ready" && job.result_url) {
         setResultUrl(job.result_url);
+        setCurrentJobId(job.id);
         if (job.score_after) setScoreAfter(job.score_after);
         setStatus({ type: "success", message: "Transformacja zakończona pomyślnie ✓" });
         setTimeout(() => setStatus({ type: "idle" }), 5000);
@@ -323,14 +351,50 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
     }
   }
 
-  /* ── Category change — resets style selection ───────────────────────── */
+  /* ── Save result ─────────────────────────────────────────────────────── */
+
+  async function handleSaveResult() {
+    if (!currentJobId || savingResult || resultSaved) return;
+    setSavingResult(true);
+    try {
+      const res = await fetch(`/api/transformations/${currentJobId}/save`, { method: "POST" });
+      if (res.ok) {
+        setResultSaved(true);
+        setStatus({ type: "success", message: "Wynik transformacji zapisany w bibliotece ✓" });
+        setTimeout(() => setStatus({ type: "idle" }), 4000);
+      } else {
+        const data = (await res.json()) as { error?: string };
+        setStatus({ type: "error", message: data.error ?? "Nie można zapisać wyniku" });
+      }
+    } catch {
+      setStatus({ type: "error", message: "Błąd sieci podczas zapisywania wyniku" });
+    } finally {
+      setSavingResult(false);
+    }
+  }
+
+  function handleClearResult() {
+    setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
+    setScoreAfter(null);
+  }
+
+  /* ── Category change — resets style ─────────────────────────────────── */
 
   function handleCategoryChange(c: ObjectCategory) {
     setCategory(c);
     setSelectedStyleKey(null);
   }
 
-  /* ── Save flow ───────────────────────────────────────────────────────── */
+  /* ── Apply prompt from drawer ────────────────────────────────────────── */
+
+  function handleApplyPrompt(prompt: string) {
+    toolbarRef.current?.applyPrompt(prompt);
+    setShowPromptDrawer(false);
+  }
+
+  /* ── Object save (name) ──────────────────────────────────────────────── */
 
   function handleOpenSave() {
     setSaveName(object.name === "Nowy projekt" ? "" : object.name);
@@ -350,7 +414,6 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
         const data = (await res.json()) as { object: ObjectRecord };
         setObject(data.object);
         setShowSaveModal(false);
-        // Stay on editor — do NOT redirect
         setStatus({ type: "success", message: `Zapisano jako „${data.object.name}" ✓` });
         setTimeout(() => setStatus({ type: "idle" }), 4000);
       } else {
@@ -369,6 +432,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
   /* ── Render ──────────────────────────────────────────────────────────── */
 
   const selectedPhoto = photos[selectedPhotoIndex] ?? photos[0];
+  const currentPromptText = toolbarRef.current?.getCurrentPrompt() ?? "";
 
   return (
     <div className="editor-shell">
@@ -376,6 +440,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
 
       <div>
         <TransformToolbar
+          ref={toolbarRef}
           category={category}
           objectName={object.name}
           selectedStyleKey={selectedStyleKey}
@@ -387,6 +452,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
           isTransforming={isTransforming}
           isSaveable={isSaveable}
           onSave={handleOpenSave}
+          onOpenPrompts={() => setShowPromptDrawer(true)}
         />
       </div>
 
@@ -415,6 +481,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
             onSelectIndex={setSelectedPhotoIndex}
             uploads={uploads}
             onFilesReady={(files) => void handleFilesReady(files)}
+            onDeletePhoto={(id) => void handleDeletePhoto(id)}
             disabled={creatingObject}
           />
         )}
@@ -428,119 +495,165 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
           onTogglePreview={() =>
             setPreviewMode((prev) => (prev === "after" ? "before-after" : "after"))
           }
+          currentJobId={currentJobId}
+          resultSaved={resultSaved}
+          onSaveResult={() => void handleSaveResult()}
+          onClearResult={handleClearResult}
         />
       </div>
 
-      {/* Save modal — stays on editor after save */}
+      {/* Prompt drawer */}
+      <PromptDrawer
+        open={showPromptDrawer}
+        category={category}
+        currentPrompt={currentPromptText}
+        onClose={() => setShowPromptDrawer(false)}
+        onApply={handleApplyPrompt}
+      />
+
+      {/* Object save modal */}
       {showSaveModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowSaveModal(false);
-          }}
-        >
-          <div
+        <Modal onDismiss={() => setShowSaveModal(false)}>
+          <h2
             style={{
-              backgroundColor: "var(--dt-color-canvas)",
-              borderRadius: "12px",
-              padding: "28px 32px",
-              width: "380px",
-              maxWidth: "90vw",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "var(--dt-color-ink)",
+              margin: "0 0 6px 0",
             }}
           >
-            <h2
+            Zapisz obiekt
+          </h2>
+          <p style={{ fontSize: "13px", color: "var(--dt-color-steel)", margin: "0 0 20px 0" }}>
+            Po zapisaniu pozostaniesz w edytorze.
+          </p>
+          <div style={{ marginBottom: "20px" }}>
+            <label
               style={{
-                fontSize: "18px",
+                fontSize: "11px",
                 fontWeight: 700,
-                color: "var(--dt-color-ink)",
-                margin: "0 0 6px 0",
+                color: "var(--dt-color-steel)",
+                display: "block",
+                marginBottom: "6px",
+                textTransform: "uppercase",
+                letterSpacing: "0.07em",
               }}
             >
-              Zapisz obiekt
-            </h2>
-            <p style={{ fontSize: "13px", color: "var(--dt-color-steel)", margin: "0 0 20px 0" }}>
-              Po zapisaniu pozostaniesz w edytorze.
-            </p>
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "var(--dt-color-steel)",
-                  display: "block",
-                  marginBottom: "6px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                }}
-              >
-                Nazwa obiektu
-              </label>
-              <input
-                type="text"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleConfirmSave();
-                  if (e.key === "Escape") setShowSaveModal(false);
-                }}
-                placeholder="np. BMW 3 Series 2021, Skórzana kurtka…"
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--dt-color-hairline)",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  color: "var(--dt-color-ink)",
-                }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => setShowSaveModal(false)}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--dt-color-hairline)",
-                  background: "none",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  color: "var(--dt-color-slate)",
-                }}
-              >
-                Anuluj
-              </button>
-              <button
-                onClick={() => void handleConfirmSave()}
-                disabled={!saveName.trim() || saving}
-                style={{
-                  padding: "8px 20px",
-                  borderRadius: "8px",
-                  backgroundColor: saveName.trim() && !saving ? "#10b981" : "#9ca3af",
-                  color: "#fff",
-                  border: "none",
-                  cursor: saveName.trim() && !saving ? "pointer" : "not-allowed",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                }}
-              >
-                {saving ? "Zapisuję…" : "Zapisz"}
-              </button>
-            </div>
+              Nazwa obiektu
+            </label>
+            <input
+              type="text"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleConfirmSave();
+                if (e.key === "Escape") setShowSaveModal(false);
+              }}
+              placeholder="np. BMW 3 Series 2021, Skórzana kurtka…"
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--dt-color-hairline)",
+                fontSize: "14px",
+                outline: "none",
+                boxSizing: "border-box",
+                color: "var(--dt-color-ink)",
+              }}
+            />
           </div>
-        </div>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setShowSaveModal(false)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--dt-color-hairline)",
+                background: "none",
+                cursor: "pointer",
+                fontSize: "13px",
+                color: "var(--dt-color-slate)",
+              }}
+            >
+              Anuluj
+            </button>
+            <button
+              onClick={() => void handleConfirmSave()}
+              disabled={!saveName.trim() || saving}
+              style={{
+                padding: "8px 20px",
+                borderRadius: "8px",
+                backgroundColor: saveName.trim() && !saving ? "#10b981" : "#9ca3af",
+                color: "#fff",
+                border: "none",
+                cursor: saveName.trim() && !saving ? "pointer" : "not-allowed",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              {saving ? "Zapisuję…" : "Zapisz"}
+            </button>
+          </div>
+        </Modal>
       )}
+
+      {/* Unused save-result modal placeholder — kept for future named-result flow */}
+      {showSaveResultModal && (
+        <Modal onDismiss={() => setShowSaveResultModal(false)}>
+          <p style={{ fontSize: "14px", color: "var(--dt-color-ink)" }}>
+            Wynik zostanie zapisany w bibliotece obiektu.
+          </p>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "16px" }}>
+            <button
+              onClick={() => setShowSaveResultModal(false)}
+              style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid var(--dt-color-hairline)", background: "none", cursor: "pointer", fontSize: "13px" }}
+            >
+              Anuluj
+            </button>
+            <button
+              onClick={() => { void handleSaveResult(); setShowSaveResultModal(false); }}
+              style={{ padding: "8px 20px", borderRadius: "8px", backgroundColor: "#7c3aed", color: "#fff", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+            >
+              Zapisz
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ── Shared modal shell ──────────────────────────────────────────────────── */
+
+function Modal({ children, onDismiss }: { children: React.ReactNode; onDismiss: () => void }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onDismiss();
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "var(--dt-color-canvas)",
+          borderRadius: "12px",
+          padding: "28px 32px",
+          width: "380px",
+          maxWidth: "90vw",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "cloudflare@cloudflare": true
+    "cloudflare@cloudflare": true,
+    "ponytail@ponytail": true
   }
 }

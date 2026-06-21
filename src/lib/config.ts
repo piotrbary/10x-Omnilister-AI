@@ -21,6 +21,29 @@ export const storageConfig = {
   maxPhotosPerObject: 10,
 } as const;
 
+export const TRANSFORMATION_MODELS: { id: string; label: string; supportsImageOutput: boolean }[] = [
+  // Direct image generation (image input → image output)
+  { id: "google/gemini-2.5-flash-image",         label: "Gemini 2.5 Flash Image",         supportsImageOutput: true },
+  { id: "google/gemini-3.1-flash-image",         label: "Gemini 3.1 Flash Image",         supportsImageOutput: true },
+  { id: "google/gemini-3.1-flash-image-preview", label: "Gemini 3.1 Flash Image Preview", supportsImageOutput: true },
+  { id: "google/gemini-3-pro-image",             label: "Gemini 3 Pro Image",             supportsImageOutput: true },
+  { id: "openai/gpt-5-image-mini",               label: "GPT-5 Image Mini",               supportsImageOutput: true },
+  { id: "openai/gpt-5-image",                    label: "GPT-5 Image",                    supportsImageOutput: true },
+  { id: "openai/gpt-5.4-image-2",                label: "GPT-5.4 Image 2",                supportsImageOutput: true },
+
+  // Prompt-enhancement models (step 1 of 2-step flow; Gemini 2.5 Flash generates the image in step 2)
+  { id: "anthropic/claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (mini)", supportsImageOutput: false },
+  { id: "anthropic/claude-sonnet-4-6",         label: "Claude Sonnet 4.6",       supportsImageOutput: false },
+  { id: "anthropic/claude-opus-4-8",           label: "Claude Opus 4.8 (pro)",   supportsImageOutput: false },
+  { id: "openai/gpt-4o-mini",                  label: "GPT-4o mini",             supportsImageOutput: false },
+  { id: "openai/gpt-4o",                       label: "GPT-4o",                  supportsImageOutput: false },
+  { id: "openai/o3-mini",                      label: "o3-mini",                 supportsImageOutput: false },
+  { id: "openai/o3",                           label: "o3",                      supportsImageOutput: false },
+  { id: "google/gemini-2.0-flash-001",         label: "Gemini 2.0 Flash (mini)", supportsImageOutput: false },
+  { id: "google/gemini-2.5-flash",             label: "Gemini 2.5 Flash",        supportsImageOutput: false },
+  { id: "google/gemini-2.5-pro",               label: "Gemini 2.5 Pro",          supportsImageOutput: false },
+];
+
 export const aiConfig = {
   /**
    * AI requests are routed through OpenRouter (https://openrouter.ai/api/v1).

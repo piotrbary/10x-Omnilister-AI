@@ -5,33 +5,37 @@ import { processTransformationBatch } from "@/lib/transformation-processor";
 import { StartTransformationRequestSchema } from "@/types/transformations";
 import type { QualityScoreSnapshot, TransformationJob } from "@/types/transformations";
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
 export const POST: APIRoute = async (context) => {
-  const user = context.locals.user;
-  if (!user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  try {
+    return await handlePost(context);
+  } catch (err) {
+    return json({ error: err instanceof Error ? err.message : "Internal server error" }, 500);
   }
+};
+
+const handlePost: APIRoute = async (context) => {
+  const user = context.locals.user;
+  if (!user) return json({ error: "Unauthorized" }, 401);
 
   let body: unknown;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
+    return json({ error: "Invalid JSON body" }, 400);
   }
 
   const parsed = StartTransformationRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return new Response(
-      JSON.stringify({ error: parsed.error.issues[0]?.message ?? "Validation failed" }),
-      { status: 400 },
-    );
+    return json({ error: parsed.error.issues[0]?.message ?? "Validation failed" }, 400);
   }
 
-  const { object_id, photo_ids, style_name, custom_prompt } = parsed.data;
+  const { object_id, photo_ids, style_name, custom_prompt, model } = parsed.data;
 
   const supabase = createClient(context.request.headers, context.cookies);
-  if (!supabase) {
-    return new Response(JSON.stringify({ error: "Service unavailable" }), { status: 503 });
-  }
+  if (!supabase) return json({ error: "Service unavailable" }, 503);
 
   // Verify object ownership
   const { data: objectRow, error: objectErr } = await supabase
@@ -41,9 +45,7 @@ export const POST: APIRoute = async (context) => {
     .eq("user_id", user.id)
     .single();
 
-  if (objectErr || !objectRow) {
-    return new Response(JSON.stringify({ error: "Object not found" }), { status: 404 });
-  }
+  if (objectErr || !objectRow) return json({ error: "Object not found" }, 404);
 
   // Verify all photo_ids belong to this object and user
   const { data: ownedPhotos, error: photosErr } = await supabase
@@ -53,17 +55,12 @@ export const POST: APIRoute = async (context) => {
     .eq("user_id", user.id)
     .in("id", photo_ids);
 
-  if (photosErr) {
-    return new Response(JSON.stringify({ error: photosErr.message }), { status: 500 });
-  }
+  if (photosErr) return json({ error: photosErr.message }, 500);
 
   const ownedIds = new Set((ownedPhotos ?? []).map((p) => p.id));
   const unauthorized = photo_ids.filter((id) => !ownedIds.has(id));
   if (unauthorized.length > 0) {
-    return new Response(
-      JSON.stringify({ error: `Photo(s) not found: ${unauthorized.join(", ")}` }),
-      { status: 400 },
-    );
+    return json({ error: `Photo(s) not found: ${unauthorized.join(", ")}` }, 400);
   }
 
   // Fetch latest quality_scores for each photo (score_before)
@@ -115,11 +112,7 @@ export const POST: APIRoute = async (context) => {
       "id, user_id, object_id, photo_id, style_name, prompt, status, result_url, result_file_size_bytes, score_before, score_after, feedback, error_message, retry_count, created_at, updated_at",
     );
 
-  if (insertErr || !insertedJobs) {
-    return new Response(JSON.stringify({ error: insertErr?.message ?? "Insert failed" }), {
-      status: 500,
-    });
-  }
+  if (insertErr || !insertedJobs) return json({ error: insertErr?.message ?? "Insert failed" }, 500);
 
   const jobs: TransformationJob[] = insertedJobs.map((row) => ({
     id: row.id,
@@ -141,7 +134,7 @@ export const POST: APIRoute = async (context) => {
   }));
 
   // Process synchronously — await so caller gets complete results
-  await processTransformationBatch(jobs, supabase);
+  await processTransformationBatch(jobs, supabase, model);
 
   // Re-fetch jobs with final state (result_url, score_after, status)
   const { data: finalRows, error: fetchErr } = await supabase
@@ -151,9 +144,7 @@ export const POST: APIRoute = async (context) => {
     )
     .in("id", jobs.map((j) => j.id));
 
-  if (fetchErr || !finalRows) {
-    return new Response(JSON.stringify({ error: "Failed to fetch final job state" }), { status: 500 });
-  }
+  if (fetchErr || !finalRows) return json({ error: "Failed to fetch final job state" }, 500);
 
   const finalJobs: TransformationJob[] = finalRows.map((row) => ({
     id: row.id,
@@ -174,8 +165,5 @@ export const POST: APIRoute = async (context) => {
     updated_at: row.updated_at,
   }));
 
-  return new Response(
-    JSON.stringify({ jobs: finalJobs }),
-    { status: 200 },
-  );
+  return json({ jobs: finalJobs });
 };

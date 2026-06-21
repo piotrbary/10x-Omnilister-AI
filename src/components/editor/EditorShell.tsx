@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { MOCK_SCORE_BEFORE } from "@/data/mockEditorData";
 import type { ObjectRecord, PhotoRecord } from "@/types/objects";
 import type { ObjectCategory } from "@/lib/config";
-import { storageConfig } from "@/lib/config";
+import { storageConfig, aiConfig, TRANSFORMATION_MODELS } from "@/lib/config";
 import type { QualityScoreSnapshot, TransformationJob } from "@/types/transformations";
 import AppNavBar from "./AppNavBar";
 import OriginalImagePanel from "./OriginalImagePanel";
@@ -51,6 +51,9 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<StatusEntry>({ type: "idle" });
+  const [selectedModel, setSelectedModel] = useState<string>(
+    TRANSFORMATION_MODELS[0]?.id ?? aiConfig.transformationModel,
+  );
 
   /* Computed status — uploads and creation take priority, then explicit status,
      then contextual hints based on editor state */
@@ -260,7 +263,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
 
   /* ── Transform ───────────────────────────────────────────────────────── */
 
-  async function handleTransform(styleKey: string, customPrompt?: string) {
+  async function handleTransform(styleKey: string, customPrompt?: string, model?: string) {
     const selectedPhoto = photos[selectedPhotoIndex] ?? photos[0];
 
     if (!objectId || !selectedPhoto) {
@@ -286,6 +289,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
           photo_ids: [selectedPhoto.id],
           style_name: styleKey,
           custom_prompt: customPrompt,
+          model: model ?? selectedModel,
         }),
       });
 
@@ -378,6 +382,8 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
           onStyleSelect={setSelectedStyleKey}
           onCategoryChange={handleCategoryChange}
           onTransform={(styleKey, customPrompt) => void handleTransform(styleKey, customPrompt)}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
           isTransforming={isTransforming}
           isSaveable={isSaveable}
           onSave={handleOpenSave}

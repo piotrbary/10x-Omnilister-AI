@@ -41,6 +41,7 @@ export const StartTransformationRequestSchema = z.object({
   photo_ids: z.array(z.string().uuid()).min(1).max(10),
   style_name: z.string().min(1),
   custom_prompt: z.string().optional(),
+  model: z.string().optional(),
 });
 
 export type StartTransformationRequest = z.infer<typeof StartTransformationRequestSchema>;

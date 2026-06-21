@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PRESET_STYLES } from "@/lib/transformation-styles";
+import { TRANSFORMATION_MODELS } from "@/lib/config";
 import type { ObjectCategory } from "@/lib/config";
 
 const CATEGORY_OPTIONS: { value: ObjectCategory; label: string }[] = [
@@ -18,6 +19,8 @@ interface TransformToolbarProps {
   isTransforming: boolean;
   isSaveable: boolean;
   onSave: () => void;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
 }
 
 export default function TransformToolbar({
@@ -30,6 +33,8 @@ export default function TransformToolbar({
   isTransforming,
   isSaveable,
   onSave,
+  selectedModel,
+  onModelChange,
 }: TransformToolbarProps) {
   const [showInstructions, setShowInstructions] = useState(false);
   const [instructions, setInstructions] = useState("");
@@ -169,6 +174,41 @@ export default function TransformToolbar({
         >
           + Instrukcje
         </button>
+
+        {divider}
+
+        {/* Model selector */}
+        <select
+          value={selectedModel}
+          onChange={(e) => onModelChange(e.target.value)}
+          title="Model AI do transformacji"
+          style={{
+            flexShrink: 0,
+            padding: "5px 10px",
+            borderRadius: "6px",
+            border: "1px solid rgba(255,255,255,0.15)",
+            backgroundColor: "rgba(255,255,255,0.08)",
+            color: "#fff",
+            fontSize: "12px",
+            cursor: "pointer",
+            outline: "none",
+          }}
+        >
+          <optgroup label="Generują obraz bezpośrednio" style={{ backgroundColor: "#1a1a2e" }}>
+            {TRANSFORMATION_MODELS.filter((m) => m.supportsImageOutput).map((m) => (
+              <option key={m.id} value={m.id} style={{ backgroundColor: "#1a1a2e" }}>
+                {m.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Ulepszają prompt → Gemini generuje (2-step)" style={{ backgroundColor: "#1a1a2e" }}>
+            {TRANSFORMATION_MODELS.filter((m) => !m.supportsImageOutput).map((m) => (
+              <option key={m.id} value={m.id} style={{ backgroundColor: "#1a1a2e" }}>
+                {m.label}
+              </option>
+            ))}
+          </optgroup>
+        </select>
 
         {/* Spacer */}
         <div style={{ flex: 1, minWidth: "8px" }} />

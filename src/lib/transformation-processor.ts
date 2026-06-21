@@ -9,6 +9,7 @@ import { scorePhoto } from "./quality-scoring";
 export async function processTransformationBatch(
   jobs: TransformationJob[],
   supabase: SupabaseClient<Database>,
+  model?: string,
 ): Promise<void> {
   if (jobs.length === 0) return;
 
@@ -21,7 +22,7 @@ export async function processTransformationBatch(
 
   const category: ObjectCategory = (objectData?.category as ObjectCategory | null) ?? "item";
 
-  await Promise.all(jobs.map((job) => processJob(job, supabase, category)));
+  await Promise.all(jobs.map((job) => processJob(job, supabase, category, model)));
 }
 
 async function writeLog(
@@ -41,6 +42,7 @@ async function processJob(
   job: TransformationJob,
   supabase: SupabaseClient<Database>,
   category: ObjectCategory,
+  model?: string,
 ): Promise<void> {
   let retryCount = job.retry_count;
   const logs: string[] = [];
@@ -72,10 +74,11 @@ async function processJob(
       const mimeType = photoRow.mime_type;
       logs.push(`[2] Photo fetched bytes=${imageData.byteLength}`);
 
-      logs.push(`[3] Calling OpenRouter ${aiConfig.transformationModel} for full generation`);
+      const effectiveModel = model ?? aiConfig.transformationModel;
+      logs.push(`[3] Calling OpenRouter ${effectiveModel} for full generation`);
       await writeLog(supabase, job.id, job.user_id, logs);
 
-      const { buffer: fullBuffer } = await generateFull(imageData, job.prompt, mimeType, logs);
+      const { buffer: fullBuffer } = await generateFull(imageData, job.prompt, mimeType, logs, effectiveModel);
       await writeLog(supabase, job.id, job.user_id, logs);
 
       const fullPath = `${job.user_id}/${job.object_id}/${job.id}/full.jpg`;

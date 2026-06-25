@@ -1,8 +1,16 @@
 ---
-import Welcome from "@/components/Welcome.astro";
 import Layout from "@/layouts/Layout.astro";
+import EditorShell from "@/components/editor/EditorShell";
+import "@/styles/editor.css";
+
+const user = Astro.locals.user;
+const objectId = Astro.url.searchParams.get("objectId");
 ---
 
-<Layout>
-  <Welcome />
+<Layout title="Studio — Omnilister AI">
+  <EditorShell
+    objectId={objectId}
+    user={user ? { email: user.email ?? "" } : null}
+    client:load
+  />
 </Layout>

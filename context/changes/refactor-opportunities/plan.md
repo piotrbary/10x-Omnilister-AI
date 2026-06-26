@@ -323,12 +323,12 @@ Additive, nullable, no default. Existing rows get NULL (backfillable: `UPDATE tr
 
 #### Automated
 
-- [ ] 3.1 Migration applies cleanly
-- [ ] 3.2 Lint passes: `npm run lint`
-- [ ] 3.3 Build passes: `npm run build`
+- [x] 3.1 Migration applies cleanly
+- [x] 3.2 Lint passes: `npm run lint`
+- [x] 3.3 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 3.4 `result_storage_path` populated in `transformations` after save
-- [ ] 3.5 `GET /api/transformations/[jobId]/result-url` returns 200 with valid URL
-- [ ] 3.6 Result image renders via refresh endpoint (stale `result_url` scenario)
+- [x] 3.4 `result_storage_path` populated in `transformations` after save
+- [x] 3.5 `GET /api/transformations/[jobId]/result-url` returns 200 with valid URL
+- [x] 3.6 Result image renders via refresh endpoint (stale `result_url` scenario)

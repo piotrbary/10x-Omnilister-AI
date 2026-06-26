@@ -92,7 +92,7 @@ async function _callGptVision(
 
   for (let attempt = 0; attempt <= aiConfig.maxRetries; attempt++) {
     try {
-      logs.push(`[vision #${attempt + 1}] POST ${aiConfig.baseUrl}/chat/completions model=${aiConfig.visionModel} key=${keyPreview}... url_len=${signedUrl.length}`);
+      logs.push(`[vision #${attempt + 1}] POST ${aiConfig.baseUrl}/chat/completions model=${model} key=${keyPreview}... url_len=${signedUrl.length}`);
 
       const response = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
         method: "POST",

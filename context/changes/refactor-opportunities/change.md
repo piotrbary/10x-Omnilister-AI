@@ -1,7 +1,7 @@
 ---
 change_id: refactor-opportunities
 title: Refactor opportunities
-status: preparing
+status: implementing
 created: 2026-06-26
 updated: 2026-06-26
 archived_at: null

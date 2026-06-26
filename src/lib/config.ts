@@ -69,6 +69,9 @@ export const aiConfig = {
 
   /** OpenRouter model ID for GPT-4o Vision used in photo quality scoring (S-02). */
   visionModel: "openai/gpt-4o",
+
+  /** Cheap vision model for on-demand scoreBefore preview in EditorShell. */
+  previewModel: "openai/gpt-4o-mini",
 } as const;
 
 export const scoringConfig = {

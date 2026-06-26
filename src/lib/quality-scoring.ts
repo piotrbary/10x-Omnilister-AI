@@ -85,6 +85,7 @@ async function _callGptVision(
   signedUrl: string,
   category: ObjectCategory,
   logs: string[],
+  model = aiConfig.visionModel,
 ): Promise<GptCallResult> {
   let lastError: unknown;
   const keyPreview = (OPENROUTER_API_KEY ?? "").slice(0, 8) || "(missing)";
@@ -100,7 +101,7 @@ async function _callGptVision(
           Authorization: `Bearer ${OPENROUTER_API_KEY ?? ""}`,
         },
         body: JSON.stringify({
-          model: aiConfig.visionModel,
+          model,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             {
@@ -178,8 +179,9 @@ async function _callGptVision(
 export async function scorePhoto(
   signedUrl: string,
   category: ObjectCategory,
+  model = aiConfig.visionModel,
 ): Promise<QualityScoreSnapshot> {
-  const { snapshot } = await _callGptVision(signedUrl, category, []);
+  const { snapshot } = await _callGptVision(signedUrl, category, [], model);
   return snapshot;
 }
 

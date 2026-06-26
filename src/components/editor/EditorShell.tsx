@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect, useMemo } from "react";
-import { MOCK_SCORE_BEFORE } from "@/data/mockEditorData";
 import type { ObjectRecord, PhotoRecord } from "@/types/objects";
 import type { ObjectCategory } from "@/lib/config";
 import { storageConfig, aiConfig, TRANSFORMATION_MODELS } from "@/lib/config";
@@ -65,6 +64,7 @@ export default function EditorShell({ objectId: initialObjectId, user }: EditorS
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [resultSaved, setResultSaved] = useState(false);
   const [scoreAfter, setScoreAfter] = useState<QualityScoreSnapshot | null>(null);
+  const [scoreBefore, setScoreBefore] = useState<QualityScoreSnapshot | null>(null);
   const [previewMode, setPreviewMode] = useState<"after" | "before-after">("after");
   const [isSaveable, setIsSaveable] = useState(!!initialObjectId);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -145,6 +145,41 @@ export default function EditorShell({ objectId: initialObjectId, user }: EditorS
       cancelled = true;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Fetch quality score for selected photo (non-guest only) */
+  useEffect(() => {
+    const photo = photos[selectedPhotoIndex] ?? photos[0];
+    const photoId = photo?.id ?? null;
+    if (isGuest || !photoId) {
+      setScoreBefore(null);
+      return;
+    }
+    setScoreBefore(null);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/quality-scores/photo/${photoId}`);
+        if (cancelled) return;
+        if (res.ok) {
+          const data = (await res.json()) as { score: QualityScoreSnapshot };
+          setScoreBefore(data.score);
+          return;
+        }
+        if (res.status === 404) {
+          const post = await fetch(`/api/quality-scores/photo/${photoId}`, { method: "POST" });
+          if (!cancelled && post.ok) {
+            const data = (await post.json()) as { score: QualityScoreSnapshot };
+            setScoreBefore(data.score);
+          }
+        }
+      } catch {
+        /* leave as null — sidebar shows "Brak danych" */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPhotoIndex, photos, isGuest]);
 
   /* ── Object browser ──────────────────────────────────────────────────── */
 
@@ -683,7 +718,7 @@ export default function EditorShell({ objectId: initialObjectId, user }: EditorS
       <StatusBar entry={displayStatus} />
 
       <div className="editor-main">
-        <ScoreSidebar scoreBefore={MOCK_SCORE_BEFORE} scoreAfter={scoreAfter} />
+        <ScoreSidebar scoreBefore={scoreBefore} scoreAfter={scoreAfter} />
 
         {loading ? (
           <div

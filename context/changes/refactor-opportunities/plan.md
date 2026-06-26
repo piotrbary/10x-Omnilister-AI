@@ -298,26 +298,26 @@ Additive, nullable, no default. Existing rows get NULL (backfillable: `UPDATE tr
 
 #### Automated
 
-- [x] 1.1 Lint passes: `npm run lint`
-- [x] 1.2 Build passes: `npm run build`
+- [x] 1.1 Lint passes: `npm run lint` — 13e3742
+- [x] 1.2 Build passes: `npm run build` — 13e3742
 
 #### Manual
 
-- [x] 1.3 Photo selection shows real quality scores (not mock 5.8)
-- [x] 1.4 Re-select same photo → instant cache hit (no visible delay)
-- [x] 1.5 Guest mode → "Brak danych" permanently, no console errors
+- [x] 1.3 Photo selection shows real quality scores (not mock 5.8) — 13e3742
+- [x] 1.4 Re-select same photo → instant cache hit (no visible delay) — 13e3742
+- [x] 1.5 Guest mode → "Brak danych" permanently, no console errors — 13e3742
 
 ### Phase 2: C-5 — Storage path from trusted values
 
 #### Automated
 
-- [ ] 2.1 DB `original_url` format verified — all rows are public-URL format
-- [ ] 2.2 Lint passes: `npm run lint`
-- [ ] 2.3 Build passes: `npm run build`
+- [x] 2.1 DB `original_url` format verified — all rows are public-URL format
+- [x] 2.2 Lint passes: `npm run lint`
+- [x] 2.3 Build passes: `npm run build`
 
 #### Manual
 
-- [ ] 2.4 Photo upload + delete → file removed from `original-photos` bucket
+- [x] 2.4 Photo upload + delete → file removed from `original-photos` bucket
 
 ### Phase 3: C-8 — Persistent result path + URL refresh endpoint
 

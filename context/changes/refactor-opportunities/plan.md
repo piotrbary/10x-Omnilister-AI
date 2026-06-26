@@ -311,13 +311,13 @@ Additive, nullable, no default. Existing rows get NULL (backfillable: `UPDATE tr
 
 #### Automated
 
-- [x] 2.1 DB `original_url` format verified — all rows are public-URL format
-- [x] 2.2 Lint passes: `npm run lint`
-- [x] 2.3 Build passes: `npm run build`
+- [x] 2.1 DB `original_url` format verified — all rows are public-URL format — 35b13b1
+- [x] 2.2 Lint passes: `npm run lint` — 35b13b1
+- [x] 2.3 Build passes: `npm run build` — 35b13b1
 
 #### Manual
 
-- [x] 2.4 Photo upload + delete → file removed from `original-photos` bucket
+- [x] 2.4 Photo upload + delete → file removed from `original-photos` bucket — 35b13b1
 
 ### Phase 3: C-8 — Persistent result path + URL refresh endpoint
 

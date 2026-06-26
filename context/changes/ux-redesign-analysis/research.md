@@ -7,8 +7,9 @@ repository: piotrbary/10x-Omnilister-AI
 topic: "Procesy zapisu i odczytu danych Supabase oraz wywołania API — analiza stanu obecnego"
 tags: [research, supabase, api, data-flow, test-coverage, blast-radius]
 status: complete
-last_updated: 2026-06-25
+last_updated: 2026-06-26
 last_updated_by: Claude Sonnet 4.6
+last_updated_note: "ast-grep structural verification: 20 claims checked, 17 confirmed, 2 refined, 1 refuted (config.ts fan-in)"
 ---
 
 # Research: Supabase data flows, API calls, test coverage, blast radius
@@ -48,7 +49,7 @@ Omnilister AI to aplikacja do AI-wspomaganej transformacji zdjęć produktowych.
 
 ### Kluczowy węzeł — `src/lib/supabase.ts`
 
-28 linii. Jedyna fabryka klienta DB. Zwraca `null` gdy `SUPABASE_URL` lub `SUPABASE_KEY` są falsy — każdy z 18 callerów obsługuje `null` samodzielnie.
+28 linii. Jedyna fabryka klienta DB. Zwraca `null` gdy `SUPABASE_URL` lub `SUPABASE_KEY` są falsy — każdy z 21 callerów obsługuje `null` samodzielnie (18 plików `.ts`/`.tsx` + 3 pliki `.astro`: `objects/index.astro`, `objects/[objectId]/transform.astro`, `objects/[objectId].astro` — poza zasięgiem dep-cruiser).
 
 ---
 
@@ -294,7 +295,7 @@ await supabase.from("quality_scores").select("...").eq("photo_id", photoId)
 // BRAK: .eq("user_id", user.id)
 ```
 
-Oba endpointy polegają na RLS policy jako jedynym guardzie. Per `lessons.md`: "Apply user_id filter on every query, even when ownership is implied."
+> **Doprecyzowanie (ast-grep, 2026-06-26):** Plik 2 ma pre-check ownership przez `photos` (linie 22–27: `.eq("user_id", user.id)` na tabeli `photos`) — nie jest to "tylko RLS". Sama query `quality_scores` wciąż brakuje filtra `user_id`. Plik 1 (`objectId/index.ts`) nie ma żadnego pre-checku dla photos — guard = wyłącznie RLS. Per `lessons.md`: "Apply user_id filter on every query, even when ownership is implied."
 
 ---
 
@@ -418,3 +419,32 @@ INSERT do `photos` może rzucić `23514` (CHECK constraint violation na `profile
 5. **`TRANSFORMATION_MODELS` spekulatywne modele** — skąd lista? Czy weryfikowana pod kątem dostępności w OpenRouter?
 6. **`computeOverall` — wszystkie wagi = 1** — komentarz "Calibrate per category before public launch". Czy to blokuje launch?
 7. **E2E tests** — czy planowane są testy Playwright dla krytycznych flows (auth, transform, save)?
+
+---
+
+## Weryfikacja strukturalna (ast-grep, 2026-06-26)
+
+Twierdzenia strukturalne z raportu zweryfikowane narzędziami `ast-grep` i `grep` na bieżącym stanie brancha `UX_REDESIGN`.
+
+| # | Twierdzenie | Wynik | Szczegóły |
+|---|-------------|-------|-----------|
+| 1 | `generateFull()` — 2 callsites: `transformation-processor.ts:81`, `guest.ts:44` | ✅ **potwierdzone** | ast-grep trafił oba dokładnie |
+| 2 | `scorePhoto` fire-and-forget — try/catch bez rethrow | ✅ **potwierdzone** | `transformation-processor.ts:118–122`: `try { scoreAfter = await scorePhoto(...) } catch { }` |
+| 3 | `processTransformationBatch` — 1 callsite (`start.ts:137`) | ✅ **potwierdzone** | ast-grep: tylko `start.ts:137` |
+| 4 | `Promise.allSettled` w `analyzeObject` | ✅ **potwierdzone** | `quality-scoring.ts:227` |
+| 5 | `Promise.all(jobs.map(...))` w `processTransformationBatch:25` | ✅ **potwierdzone** | `transformation-processor.ts:25` |
+| 6 | `createSignedUrl` TTL=86400s | ✅ **potwierdzone** | `transformation-processor.ts:99`; dodatkowe `.createSignedUrl(photo.original_url, 60)` w `quality-scoring.ts:220` (scoring — 60s, różne TTL) |
+| 7 | `MOCK_SCORE_BEFORE` — import linia 2, użycie linia 686 | ✅ **potwierdzone** | `EditorShell.tsx:2` i `:686` — bezwarunkowy |
+| 8 | `NO_DISTORTION_GUARDRAIL` appended to every prompt | ✅ **potwierdzone** | `transformation-styles.ts:90` (`buildPromptFromRaw`) i `:103` (`buildPrompt`) — obie ścieżki |
+| 9 | `supportsImageOutput` — runtime branching w `openrouter-images.ts:148–158` | ✅ **potwierdzone** | linie 149, 156, 158 |
+| 10 | `aiConfig.visionModel = "openai/gpt-4o"` (`config.ts:71`) | ✅ **potwierdzone** | `config.ts:71` |
+| 11 | `aiConfig.maxRetries = 2`, `while (true)` retry loop | ✅ **potwierdzone** | `config.ts:68`, `transformation-processor.ts:50` |
+| 12 | `PROTECTED_ROUTES = ["/dashboard", "/objects"]` — `/app/editor` nie chroniony | ✅ **potwierdzone** | `middleware.ts:4` |
+| 13 | `EditorShell` fan-out = 9 | ✅ **potwierdzone** | 9 runtime (non-type) importów; type-only (`import type`) dep-cruiser nie liczy |
+| 14 | `enhancePrompt()` i `generateImage()` — private (non-exported) | ✅ **potwierdzone** | `openrouter-images.ts:17,75` — brak `export` prefix; `generateFull` eksportowana `:141` |
+| 15 | `generateFull` zwraca `{ url: "", buffer }` — `url` zawsze pusty | ✅ **potwierdzone** | `openrouter-images.ts:166` |
+| 16 | TD-2: brak `user_id` w photos query (`objectId/index.ts:74`) | ✅ **potwierdzone** | tylko `.eq("object_id", objectId)`, brak pre-checku dla photos |
+| 17 | TD-2: brak `user_id` w `quality_scores` query | ✅ **doprecyzowane** | query brakuje `user_id` ✓, ale endpoint MA pre-check ownership przez `photos` (linie 22–27) — nie "wyłącznie RLS" |
+| 18 | TD-6: storage path przez `segments.slice(-3)` | ✅ **potwierdzone** | `photos/[photoId].ts:34–35` |
+| 19 | `supabase.ts` fan-in = 18 | ✅ **doprecyzowane** | 18 plików `.ts`/`.tsx` (dep-cruiser) + 3 pliki `.astro` (dep-cruiser blind-spot) = **21 callerów łącznie** |
+| 20 | `config.ts` fan-in = 15 | ❌ **obalone** | grep: 18 via `@/lib/config` + 3 via `./config` (lib files) = **21 importerów**; liczba 15 z dep-cruiser była nieaktualna (snapshot sprzed dodania komponentów na branchu UX_REDESIGN) |

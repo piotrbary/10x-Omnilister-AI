@@ -39,6 +39,13 @@ export function openrouter(model: string) {
 /** Default model; override with OPENROUTER_MODEL (any OpenRouter model id). */
 export const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? 'openai/gpt-4o-mini';
 
+/**
+ * Stronger model for a second opinion: when the cheap default rejects a chunk,
+ * this model re-reviews it and its verdict is final. Set equal to DEFAULT_MODEL
+ * (or via ESCALATION_MODEL) to disable escalation.
+ */
+export const ESCALATION_MODEL = process.env.ESCALATION_MODEL ?? 'openai/gpt-4o';
+
 /** Schema for a single review finding. */
 export const reviewFindingSchema = z.object({
   severity: z.enum(['info', 'minor', 'major', 'critical']),
@@ -150,7 +157,14 @@ async function main(): Promise<void> {
   let approved = true;
   for (const [i, chunk] of chunks.entries()) {
     if (chunks.length > 1) console.log(`--- chunk ${i + 1}/${chunks.length} ---`);
-    const review = await reviewCode(chunk, { language: 'diff' });
+    let review = await reviewCode(chunk, { language: 'diff' });
+
+    // A cheap-model rejection is confirmed by a stronger model before it blocks
+    // the PR — the escalation verdict is final. Cuts small-model false positives.
+    if (!review.approved && ESCALATION_MODEL !== DEFAULT_MODEL) {
+      console.log(`  ↑ rejected by ${DEFAULT_MODEL}; re-reviewing with ${ESCALATION_MODEL}`);
+      review = await reviewCode(chunk, { language: 'diff', model: ESCALATION_MODEL });
+    }
     approved &&= review.approved;
 
     console.log(`Summary: ${review.summary}`);

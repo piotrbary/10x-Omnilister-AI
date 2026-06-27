@@ -9,6 +9,7 @@
  * NOTE: pinned to AI SDK v6 because the OpenRouter provider (`2.10.0`, the
  * current `latest`) peers `ai@^6`; no stable OpenRouter release targets v7 yet.
  */
+import { execSync } from 'node:child_process';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
@@ -92,12 +93,29 @@ export async function reviewCode(code: string, options: ReviewOptions = {}): Pro
   return output;
 }
 
-/** Demo run: `npm start`. Reviews a small buggy snippet and prints the result. */
-async function main(): Promise<void> {
-  const sample = `function divide(a, b) {\n  return a / b; // no guard against b === 0\n}`;
+/**
+ * Diff to review: changes between the base ref's merge-base and HEAD.
+ * DIFF_BASE is set by CI (e.g. `origin/main`); locally it falls back to the
+ * working-tree diff against HEAD so `npm start` reviews your uncommitted work.
+ * ponytail: whole diff in one prompt; chunk by file if a PR ever exceeds the
+ * model's context window.
+ */
+function getDiff(): string {
+  const base = process.env.DIFF_BASE;
+  const cmd = base ? `git diff ${base}...HEAD` : 'git diff HEAD';
+  return execSync(cmd, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).trim();
+}
 
-  console.log(`Reviewing sample with model: ${DEFAULT_MODEL}\n`);
-  const review = await reviewCode(sample, { language: 'javascript' });
+/** `npm start`: review the current diff and print findings. */
+async function main(): Promise<void> {
+  const diff = getDiff();
+  if (!diff) {
+    console.log('No changes to review.');
+    return;
+  }
+
+  console.log(`Reviewing diff with model: ${DEFAULT_MODEL}\n`);
+  const review = await reviewCode(diff, { language: 'diff' });
 
   console.log(`Summary: ${review.summary}`);
   console.log(`Approved: ${review.approved}\n`);
@@ -105,6 +123,9 @@ async function main(): Promise<void> {
     const where = f.line === null ? 'general' : `line ${f.line}`;
     console.log(`[${f.severity}] (${where}) ${f.message}\n  → ${f.suggestion}`);
   }
+
+  // Block the PR when the agent finds the change unsafe to merge as-is.
+  if (!review.approved) process.exitCode = 1;
 }
 
 // Run only when executed directly (Node 24 `import.meta.main`), not when imported.

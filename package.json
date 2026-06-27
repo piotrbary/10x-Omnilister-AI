@@ -19,6 +19,7 @@
     "depcruise:html": "depcruise src --config .dependency-cruiser.cjs --output-type err-html --output-to dep-report.html"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.195",
     "@astrojs/check": "^0.9.2",
     "@astrojs/cloudflare": "^13.5.0",
     "@astrojs/react": "^5.0.4",

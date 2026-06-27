@@ -14,12 +14,12 @@ jobs:
         working-directory: packages/code-reviewer
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # full history so the base ref is available for the diff
 
       - name: Configure node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '24' # code-reviewer relies on import.meta.main (Node 24)
 

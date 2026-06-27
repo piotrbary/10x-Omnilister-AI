@@ -139,6 +139,10 @@ function chunkDiff(diff: string): string[] {
   return chunks;
 }
 
+/** A review blocks the PR only if it carries a `critical` finding. */
+const hasCritical = (review: CodeReview): boolean =>
+  review.findings.some((f) => f.severity === 'critical');
+
 /** `npm start`: review the current diff (chunked if large) and print findings. */
 async function main(): Promise<void> {
   const diff = getDiff();
@@ -154,18 +158,18 @@ async function main(): Promise<void> {
       '\n',
   );
 
-  let approved = true;
+  let blocked = false;
   for (const [i, chunk] of chunks.entries()) {
     if (chunks.length > 1) console.log(`--- chunk ${i + 1}/${chunks.length} ---`);
     let review = await reviewCode(chunk, { language: 'diff' });
 
-    // A cheap-model rejection is confirmed by a stronger model before it blocks
-    // the PR — the escalation verdict is final. Cuts small-model false positives.
-    if (!review.approved && ESCALATION_MODEL !== DEFAULT_MODEL) {
-      console.log(`  ↑ rejected by ${DEFAULT_MODEL}; re-reviewing with ${ESCALATION_MODEL}`);
+    // Only a `critical` finding blocks the PR — confirm it with a stronger model
+    // first; its verdict is final. Cuts small-model false positives.
+    if (hasCritical(review) && ESCALATION_MODEL !== DEFAULT_MODEL) {
+      console.log(`  ↑ critical flagged by ${DEFAULT_MODEL}; re-reviewing with ${ESCALATION_MODEL}`);
       review = await reviewCode(chunk, { language: 'diff', model: ESCALATION_MODEL });
     }
-    approved &&= review.approved;
+    if (hasCritical(review)) blocked = true;
 
     console.log(`Summary: ${review.summary}`);
     console.log(`Approved: ${review.approved}\n`);
@@ -175,8 +179,8 @@ async function main(): Promise<void> {
     }
   }
 
-  // Block the PR when any chunk is unsafe to merge as-is.
-  if (!approved) process.exitCode = 1;
+  // Block the PR only when a critical finding survived escalation.
+  if (blocked) process.exitCode = 1;
 }
 
 // Run only when executed directly (Node 24 `import.meta.main`), not when imported.

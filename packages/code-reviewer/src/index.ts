@@ -83,6 +83,9 @@ export async function reviewCode(code: string, options: ReviewOptions = {}): Pro
   const { output } = await generateText({
     model: openrouter(model),
     output: Output.object({ schema: reviewSchema }),
+    // A structured review is small; cap output so we don't pay (or reserve credit)
+    // for the model's ~16k-token default. Raise if findings get truncated.
+    maxOutputTokens: 2000,
     system:
       'You are a meticulous senior code reviewer. Flag correctness bugs, security ' +
       'issues, and clear design problems. Be specific and actionable; do not nitpick style.',

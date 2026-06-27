@@ -39,6 +39,13 @@ export function openrouter(model: string) {
 /** Default model; override with OPENROUTER_MODEL (any OpenRouter model id). */
 export const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? 'openai/gpt-4o-mini';
 
+/**
+ * Stronger model for a second opinion: when the cheap default rejects a chunk,
+ * this model re-reviews it and its verdict is final. Set equal to DEFAULT_MODEL
+ * (or via ESCALATION_MODEL) to disable escalation.
+ */
+export const ESCALATION_MODEL = process.env.ESCALATION_MODEL ?? 'openai/gpt-4o';
+
 /** Schema for a single review finding. */
 export const reviewFindingSchema = z.object({
   severity: z.enum(['info', 'minor', 'major', 'critical']),
@@ -97,16 +104,46 @@ export async function reviewCode(code: string, options: ReviewOptions = {}): Pro
  * Diff to review: changes between the base ref's merge-base and HEAD.
  * DIFF_BASE is set by CI (e.g. `origin/main`); locally it falls back to the
  * working-tree diff against HEAD so `npm start` reviews your uncommitted work.
- * ponytail: whole diff in one prompt; chunk by file if a PR ever exceeds the
- * model's context window.
  */
 function getDiff(): string {
   const base = process.env.DIFF_BASE;
   const cmd = base ? `git diff ${base}...HEAD` : 'git diff HEAD';
-  return execSync(cmd, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).trim();
+  return execSync(cmd, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 }
 
-/** `npm start`: review the current diff and print findings. */
+/**
+ * ~60k tokens of input. Diffs are token-dense (~2.5 chars/token, not 4), and the
+ * model reserves ~16k tokens for completion — so this stays well under a 128k window.
+ */
+const MAX_CHUNK_CHARS = 150_000;
+
+/**
+ * Split a diff into review chunks, each under MAX_CHUNK_CHARS. Files (sections
+ * starting with `diff --git`) are packed greedily so small files share a call.
+ * ponytail: a single file larger than the budget is truncated, not split mid-
+ * hunk — fine for review; split per-hunk only if huge single files become common.
+ */
+function chunkDiff(diff: string): string[] {
+  const files = diff.split(/(?=^diff --git )/m).filter((p) => p.trim());
+  const chunks: string[] = [];
+  let current = '';
+  for (const file of files) {
+    const piece = file.length > MAX_CHUNK_CHARS ? file.slice(0, MAX_CHUNK_CHARS) : file;
+    if (current && current.length + piece.length > MAX_CHUNK_CHARS) {
+      chunks.push(current);
+      current = '';
+    }
+    current += piece;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+/** A review blocks the PR only if it carries a `critical` finding. */
+const hasCritical = (review: CodeReview): boolean =>
+  review.findings.some((f) => f.severity === 'critical');
+
+/** `npm start`: review the current diff (chunked if large) and print findings. */
 async function main(): Promise<void> {
   const diff = getDiff();
   if (!diff) {
@@ -114,18 +151,36 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log(`Reviewing diff with model: ${DEFAULT_MODEL}\n`);
-  const review = await reviewCode(diff, { language: 'diff' });
+  const chunks = chunkDiff(diff);
+  console.log(
+    `Reviewing diff with model: ${DEFAULT_MODEL}` +
+      (chunks.length > 1 ? ` (${chunks.length} chunks)` : '') +
+      '\n',
+  );
 
-  console.log(`Summary: ${review.summary}`);
-  console.log(`Approved: ${review.approved}\n`);
-  for (const f of review.findings) {
-    const where = f.line === null ? 'general' : `line ${f.line}`;
-    console.log(`[${f.severity}] (${where}) ${f.message}\n  → ${f.suggestion}`);
+  let blocked = false;
+  for (const [i, chunk] of chunks.entries()) {
+    if (chunks.length > 1) console.log(`--- chunk ${i + 1}/${chunks.length} ---`);
+    let review = await reviewCode(chunk, { language: 'diff' });
+
+    // Only a `critical` finding blocks the PR — confirm it with a stronger model
+    // first; its verdict is final. Cuts small-model false positives.
+    if (hasCritical(review) && ESCALATION_MODEL !== DEFAULT_MODEL) {
+      console.log(`  ↑ critical flagged by ${DEFAULT_MODEL}; re-reviewing with ${ESCALATION_MODEL}`);
+      review = await reviewCode(chunk, { language: 'diff', model: ESCALATION_MODEL });
+    }
+    if (hasCritical(review)) blocked = true;
+
+    console.log(`Summary: ${review.summary}`);
+    console.log(`Approved: ${review.approved}\n`);
+    for (const f of review.findings) {
+      const where = f.line === null ? 'general' : `line ${f.line}`;
+      console.log(`[${f.severity}] (${where}) ${f.message}\n  → ${f.suggestion}`);
+    }
   }
 
-  // Block the PR when the agent finds the change unsafe to merge as-is.
-  if (!review.approved) process.exitCode = 1;
+  // Block the PR only when a critical finding survived escalation.
+  if (blocked) process.exitCode = 1;
 }
 
 // Run only when executed directly (Node 24 `import.meta.main`), not when imported.

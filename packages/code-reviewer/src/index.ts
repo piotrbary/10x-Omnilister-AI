@@ -97,16 +97,42 @@ export async function reviewCode(code: string, options: ReviewOptions = {}): Pro
  * Diff to review: changes between the base ref's merge-base and HEAD.
  * DIFF_BASE is set by CI (e.g. `origin/main`); locally it falls back to the
  * working-tree diff against HEAD so `npm start` reviews your uncommitted work.
- * ponytail: whole diff in one prompt; chunk by file if a PR ever exceeds the
- * model's context window.
  */
 function getDiff(): string {
   const base = process.env.DIFF_BASE;
   const cmd = base ? `git diff ${base}...HEAD` : 'git diff HEAD';
-  return execSync(cmd, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).trim();
+  return execSync(cmd, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 }
 
-/** `npm start`: review the current diff and print findings. */
+/**
+ * ~60k tokens of input. Diffs are token-dense (~2.5 chars/token, not 4), and the
+ * model reserves ~16k tokens for completion — so this stays well under a 128k window.
+ */
+const MAX_CHUNK_CHARS = 150_000;
+
+/**
+ * Split a diff into review chunks, each under MAX_CHUNK_CHARS. Files (sections
+ * starting with `diff --git`) are packed greedily so small files share a call.
+ * ponytail: a single file larger than the budget is truncated, not split mid-
+ * hunk — fine for review; split per-hunk only if huge single files become common.
+ */
+function chunkDiff(diff: string): string[] {
+  const files = diff.split(/(?=^diff --git )/m).filter((p) => p.trim());
+  const chunks: string[] = [];
+  let current = '';
+  for (const file of files) {
+    const piece = file.length > MAX_CHUNK_CHARS ? file.slice(0, MAX_CHUNK_CHARS) : file;
+    if (current && current.length + piece.length > MAX_CHUNK_CHARS) {
+      chunks.push(current);
+      current = '';
+    }
+    current += piece;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+/** `npm start`: review the current diff (chunked if large) and print findings. */
 async function main(): Promise<void> {
   const diff = getDiff();
   if (!diff) {
@@ -114,18 +140,29 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log(`Reviewing diff with model: ${DEFAULT_MODEL}\n`);
-  const review = await reviewCode(diff, { language: 'diff' });
+  const chunks = chunkDiff(diff);
+  console.log(
+    `Reviewing diff with model: ${DEFAULT_MODEL}` +
+      (chunks.length > 1 ? ` (${chunks.length} chunks)` : '') +
+      '\n',
+  );
 
-  console.log(`Summary: ${review.summary}`);
-  console.log(`Approved: ${review.approved}\n`);
-  for (const f of review.findings) {
-    const where = f.line === null ? 'general' : `line ${f.line}`;
-    console.log(`[${f.severity}] (${where}) ${f.message}\n  → ${f.suggestion}`);
+  let approved = true;
+  for (const [i, chunk] of chunks.entries()) {
+    if (chunks.length > 1) console.log(`--- chunk ${i + 1}/${chunks.length} ---`);
+    const review = await reviewCode(chunk, { language: 'diff' });
+    approved &&= review.approved;
+
+    console.log(`Summary: ${review.summary}`);
+    console.log(`Approved: ${review.approved}\n`);
+    for (const f of review.findings) {
+      const where = f.line === null ? 'general' : `line ${f.line}`;
+      console.log(`[${f.severity}] (${where}) ${f.message}\n  → ${f.suggestion}`);
+    }
   }
 
-  // Block the PR when the agent finds the change unsafe to merge as-is.
-  if (!review.approved) process.exitCode = 1;
+  // Block the PR when any chunk is unsafe to merge as-is.
+  if (!approved) process.exitCode = 1;
 }
 
 // Run only when executed directly (Node 24 `import.meta.main`), not when imported.

@@ -1,8 +1,11 @@
 interface AppNavBarProps {
-  userEmail: string;
+  user: { email: string } | null;
+  onSignIn: () => void;
+  onBrowseObjects: () => void;
+  onNewProject: () => void;
 }
 
-export default function AppNavBar({ userEmail }: AppNavBarProps) {
+export default function AppNavBar({ user, onSignIn, onBrowseObjects, onNewProject }: AppNavBarProps) {
   return (
     <nav
       style={{
@@ -17,76 +20,107 @@ export default function AppNavBar({ userEmail }: AppNavBarProps) {
       }}
     >
       {/* Logo */}
-      <a
-        href="/"
+      <span
         style={{
           fontSize: "14px",
           fontWeight: 700,
           color: "#fff",
-          textDecoration: "none",
           marginRight: "28px",
           whiteSpace: "nowrap",
           letterSpacing: "-0.01em",
+          cursor: "default",
         }}
       >
         Omnilister AI
-      </a>
+      </span>
 
-      {/* Nav links */}
-      <div style={{ display: "flex", gap: "2px", flex: 1 }}>
-        {(
-          [
-            { href: "/dashboard", label: "Dashboard" },
-            { href: "/objects", label: "Obiekty" },
-            { href: "/styles", label: "Style" },
-            { href: "/app/editor", label: "Studio", active: true },
-          ] as { href: string; label: string; active?: boolean }[]
-        ).map(({ href, label, active }) => (
-          <a
-            key={href}
-            href={href}
+      {/* Nav actions */}
+      <div style={{ display: "flex", gap: "4px", flex: 1 }}>
+        <button
+          onClick={onNewProject}
+          style={{
+            fontSize: "13px",
+            fontWeight: 400,
+            color: "rgba(255,255,255,0.5)",
+            background: "none",
+            border: "none",
+            padding: "5px 10px",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          + Nowy
+        </button>
+
+        {user && (
+          <button
+            onClick={onBrowseObjects}
             style={{
               fontSize: "13px",
-              fontWeight: active ? 600 : 400,
-              color: active ? "#fff" : "rgba(255,255,255,0.5)",
-              textDecoration: "none",
+              fontWeight: 400,
+              color: "rgba(255,255,255,0.5)",
+              background: "none",
+              border: "none",
               padding: "5px 10px",
               borderRadius: "6px",
-              backgroundColor: active ? "rgba(255,255,255,0.08)" : "transparent",
-            }}
-          >
-            {label}
-          </a>
-        ))}
-      </div>
-
-      {/* Right: user info + actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px", flexShrink: 0 }}>
-        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {userEmail}
-        </span>
-        <a
-          href="/objects"
-          style={{ fontSize: "12px", color: "rgba(255,255,255,0.55)", textDecoration: "none" }}
-        >
-          Profil
-        </a>
-        <form method="POST" action="/api/auth/signout" style={{ margin: 0, padding: 0 }}>
-          <button
-            type="submit"
-            style={{
-              fontSize: "12px",
-              color: "rgba(255,255,255,0.55)",
-              background: "none",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: "6px",
-              padding: "4px 10px",
               cursor: "pointer",
             }}
           >
-            Wyloguj
+            Obiekty
           </button>
-        </form>
+        )}
+      </div>
+
+      {/* Right side */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+        {user ? (
+          <>
+            <span
+              style={{
+                fontSize: "12px",
+                color: "rgba(255,255,255,0.35)",
+                maxWidth: "200px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {user.email}
+            </span>
+            <form method="POST" action="/api/auth/signout" style={{ margin: 0, padding: 0 }}>
+              <button
+                type="submit"
+                style={{
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.55)",
+                  background: "none",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "6px",
+                  padding: "4px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                Wyloguj
+              </button>
+            </form>
+          </>
+        ) : (
+          <button
+            onClick={onSignIn}
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#fff",
+              background: "rgba(99,102,241,0.85)",
+              border: "none",
+              borderRadius: "6px",
+              padding: "5px 14px",
+              cursor: "pointer",
+            }}
+          >
+            Zaloguj się
+          </button>
+        )}
       </div>
     </nav>
   );

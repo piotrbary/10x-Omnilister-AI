@@ -85,13 +85,14 @@ async function _callGptVision(
   signedUrl: string,
   category: ObjectCategory,
   logs: string[],
+  model = aiConfig.visionModel,
 ): Promise<GptCallResult> {
   let lastError: unknown;
   const keyPreview = (OPENROUTER_API_KEY ?? "").slice(0, 8) || "(missing)";
 
   for (let attempt = 0; attempt <= aiConfig.maxRetries; attempt++) {
     try {
-      logs.push(`[vision #${attempt + 1}] POST ${aiConfig.baseUrl}/chat/completions model=${aiConfig.visionModel} key=${keyPreview}... url_len=${signedUrl.length}`);
+      logs.push(`[vision #${attempt + 1}] POST ${aiConfig.baseUrl}/chat/completions model=${model} key=${keyPreview}... url_len=${signedUrl.length}`);
 
       const response = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
         method: "POST",
@@ -100,7 +101,7 @@ async function _callGptVision(
           Authorization: `Bearer ${OPENROUTER_API_KEY ?? ""}`,
         },
         body: JSON.stringify({
-          model: aiConfig.visionModel,
+          model,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             {
@@ -178,8 +179,9 @@ async function _callGptVision(
 export async function scorePhoto(
   signedUrl: string,
   category: ObjectCategory,
+  model = aiConfig.visionModel,
 ): Promise<QualityScoreSnapshot> {
-  const { snapshot } = await _callGptVision(signedUrl, category, []);
+  const { snapshot } = await _callGptVision(signedUrl, category, [], model);
   return snapshot;
 }
 

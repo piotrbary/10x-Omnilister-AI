@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { MOCK_SCORE_BEFORE } from "@/data/mockEditorData";
+import { useRef, useState, useEffect, useMemo } from "react";
 import type { ObjectRecord, PhotoRecord } from "@/types/objects";
 import type { ObjectCategory } from "@/lib/config";
 import { storageConfig, aiConfig, TRANSFORMATION_MODELS } from "@/lib/config";
@@ -9,13 +8,15 @@ import OriginalImagePanel from "./OriginalImagePanel";
 import type { UploadItem } from "./OriginalImagePanel";
 import TransformedImagePanel from "./TransformedImagePanel";
 import TransformToolbar from "./TransformToolbar";
+import type { ToolbarHandle } from "./TransformToolbar";
 import ScoreSidebar from "./ScoreSidebar";
 import StatusBar from "./StatusBar";
 import type { StatusEntry } from "./StatusBar";
+import PromptDrawer from "./PromptDrawer";
 
 interface EditorShellProps {
   objectId: string | null;
-  userEmail: string;
+  user: { email: string } | null;
 }
 
 const VALID_CATEGORIES: ObjectCategory[] = ["car", "real-estate", "item"];
@@ -32,7 +33,23 @@ const EMPTY_OBJECT: ObjectRecord = {
   createdAt: "",
 };
 
-export default function EditorShell({ objectId: initialObjectId, userEmail }: EditorShellProps) {
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      resolve(result.split(",")[1] ?? "");
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export default function EditorShell({ objectId: initialObjectId, user }: EditorShellProps) {
+  const toolbarRef = useRef<ToolbarHandle>(null);
+  const isGuest = user === null;
+
+  // Core editor state
   const [objectId, setObjectId] = useState<string | null>(initialObjectId);
   const [object, setObject] = useState<ObjectRecord>(EMPTY_OBJECT);
   const [photos, setPhotos] = useState<PhotoRecord[]>([]);
@@ -44,27 +61,43 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
   const [creatingObject, setCreatingObject] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
+  const [resultSaved, setResultSaved] = useState(false);
   const [scoreAfter, setScoreAfter] = useState<QualityScoreSnapshot | null>(null);
+  const [scoreBefore, setScoreBefore] = useState<QualityScoreSnapshot | null>(null);
   const [previewMode, setPreviewMode] = useState<"after" | "before-after">("after");
   const [isSaveable, setIsSaveable] = useState(!!initialObjectId);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingResult, setSavingResult] = useState(false);
   const [status, setStatus] = useState<StatusEntry>({ type: "idle" });
+  const [showPromptDrawer, setShowPromptDrawer] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>(
     TRANSFORMATION_MODELS[0]?.id ?? aiConfig.transformationModel,
   );
 
-  /* Computed status — uploads and creation take priority, then explicit status,
-     then contextual hints based on editor state */
+  // Guest mode: map photoId → File for transform
+  const [guestFiles, setGuestFiles] = useState<Map<string, File>>(new Map());
+
+  // Auth modal
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
+
+  // Object browser (logged-in users)
+  const [showObjectBrowser, setShowObjectBrowser] = useState(false);
+  const [objectList, setObjectList] = useState<ObjectRecord[]>([]);
+  const [objectBrowserLoading, setObjectBrowserLoading] = useState(false);
+
   const displayStatus = useMemo<StatusEntry>(() => {
-    if (creatingObject) {
-      return { type: "progress", message: "Tworzenie obiektu w bazie danych…" };
-    }
+    if (creatingObject) return { type: "progress", message: "Tworzenie obiektu w bazie danych…" };
     if (uploads.length > 0) {
-      const avg = Math.round(
-        uploads.reduce((s, u) => s + u.progress, 0) / uploads.length,
-      );
+      const avg = Math.round(uploads.reduce((s, u) => s + u.progress, 0) / uploads.length);
       const label =
         uploads.length === 1
           ? `Wgrywanie: ${uploads[0]!.name}`
@@ -72,26 +105,26 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       return { type: "progress", message: label, percent: avg };
     }
     if (status.type !== "idle") return status;
-
-    // Contextual guidance in idle state
     if (photos.length === 0) {
       return {
         type: "info",
-        message: "Przeciągnij zdjęcie do lewego panelu lub kliknij, aby wybrać plik z dysku",
+        message: isGuest
+          ? "Tryb gość — przeciągnij zdjęcie, aby rozpocząć. Zaloguj się, by zapisywać do chmury."
+          : "Przeciągnij zdjęcie do lewego panelu lub kliknij, aby wybrać plik z dysku",
       };
     }
     if (!selectedStyleKey) {
       return {
         type: "info",
-        message: "Zdjęcie wgrane — wybierz styl transformacji (Showroom, Outdoor…) i kliknij ▶ Zastosuj",
+        message: "Zdjęcie wgrane — wybierz styl transformacji i kliknij ▶ Zastosuj",
       };
     }
     return { type: "idle", message: "Gotowy — kliknij ▶ Zastosuj, aby przetransformować zdjęcie" };
-  }, [creatingObject, uploads, status, photos.length, selectedStyleKey]);
+  }, [creatingObject, uploads, status, photos.length, selectedStyleKey, isGuest]);
 
-  /* Load existing object + photos on mount */
+  /* Load existing object + photos on mount (cloud mode only) */
   useEffect(() => {
-    if (!initialObjectId) return;
+    if (!initialObjectId || isGuest) return;
     let cancelled = false;
     void (async () => {
       setLoading(true);
@@ -108,8 +141,140 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Fetch quality score for selected photo (non-guest only) */
+  useEffect(() => {
+    const photo = photos[selectedPhotoIndex] ?? photos[0];
+    const photoId = photo?.id ?? null;
+    if (isGuest || !photoId) {
+      setScoreBefore(null);
+      return;
+    }
+    setScoreBefore(null);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/quality-scores/photo/${photoId}`);
+        if (cancelled) return;
+        if (res.ok) {
+          const data = (await res.json()) as { score: QualityScoreSnapshot };
+          setScoreBefore(data.score);
+          return;
+        }
+        if (res.status === 404) {
+          const post = await fetch(`/api/quality-scores/photo/${photoId}`, { method: "POST" });
+          if (!cancelled && post.ok) {
+            const data = (await post.json()) as { score: QualityScoreSnapshot };
+            setScoreBefore(data.score);
+          }
+        }
+      } catch {
+        /* leave as null — sidebar shows "Brak danych" */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPhotoIndex, photos, isGuest]);
+
+  /* ── Object browser ──────────────────────────────────────────────────── */
+
+  async function openObjectBrowser() {
+    setShowObjectBrowser(true);
+    setObjectBrowserLoading(true);
+    try {
+      const res = await fetch("/api/objects");
+      if (res.ok) {
+        const data = (await res.json()) as { objects: ObjectRecord[] };
+        setObjectList(data.objects ?? []);
+      }
+    } finally {
+      setObjectBrowserLoading(false);
+    }
+  }
+
+  async function handleLoadObject(id: string) {
+    setShowObjectBrowser(false);
+    setLoading(true);
+    setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
+    setScoreAfter(null);
+    setSelectedStyleKey(null);
+    try {
+      const res = await fetch(`/api/objects/${id}`);
+      if (res.ok) {
+        const data = (await res.json()) as { object: ObjectRecord; photos: PhotoRecord[] };
+        setObjectId(id);
+        setObject(data.object);
+        setPhotos(data.photos);
+        setCategory(toCategory(data.object.category));
+        setIsSaveable(true);
+        window.history.replaceState({}, "", `/?objectId=${id}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleNewProject() {
+    setObjectId(null);
+    setObject(EMPTY_OBJECT);
+    setPhotos([]);
+    setCategory("car");
+    setSelectedStyleKey(null);
+    setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
+    setScoreAfter(null);
+    setIsSaveable(false);
+    setGuestFiles(new Map());
+    setStatus({ type: "idle" });
+    window.history.replaceState({}, "", "/");
+  }
+
+  /* ── Auth modal ──────────────────────────────────────────────────────── */
+
+  function openAuthModal(mode: "signin" | "signup" = "signin") {
+    setAuthMode(mode);
+    setAuthEmail("");
+    setAuthPassword("");
+    setAuthError(null);
+    setAuthSuccess(false);
+    setShowAuthModal(true);
+  }
+
+  async function handleAuth() {
+    if (!authEmail.trim() || !authPassword.trim()) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const endpoint = authMode === "signin" ? "/api/auth/signin" : "/api/auth/signup";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: authEmail, password: authPassword }),
+      });
+      const data = (await res.json()) as { error?: string; confirmEmail?: boolean };
+      if (!res.ok) {
+        setAuthError(data.error ?? "Błąd uwierzytelnienia");
+        return;
+      }
+      if (authMode === "signup") {
+        setAuthSuccess(true);
+      } else {
+        window.location.reload();
+      }
+    } catch {
+      setAuthError("Błąd sieci — spróbuj ponownie");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
 
   /* ── Upload helpers ──────────────────────────────────────────────────── */
 
@@ -119,8 +284,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
 
     const updateProgress = (p: number) =>
       setUploads((prev) => prev.map((u) => (u.id === uploadId ? { ...u, progress: p } : u)));
-    const removeUpload = () =>
-      setUploads((prev) => prev.filter((u) => u.id !== uploadId));
+    const removeUpload = () => setUploads((prev) => prev.filter((u) => u.id !== uploadId));
 
     try {
       const urlRes = await fetch(`/api/objects/${objId}/photos/upload-url`, {
@@ -130,7 +294,8 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       });
 
       if (urlRes.status === 401) {
-        window.location.assign("/auth/signin");
+        openAuthModal("signin");
+        removeUpload();
         return;
       }
 
@@ -158,7 +323,9 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
               const b = JSON.parse(xhr.responseText) as { message?: string; error?: string };
               if (b.message) msg = b.message;
               else if (b.error) msg = b.error;
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
             reject(new Error(msg));
           }
         };
@@ -189,9 +356,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       updateProgress(100);
       setTimeout(removeUpload, 800);
 
-      // Add photo and select it — avoid calling setState inside setState updater
-      const newPhoto = confirmData.photo!;
-      setPhotos((prev) => [...prev, newPhoto]);
+      setPhotos((prev) => [...prev, confirmData.photo!]);
       setSelectedPhotoIndex(nextIndex);
       setIsSaveable(true);
     } catch (err) {
@@ -205,7 +370,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
     if (photos.length >= storageConfig.maxPhotosPerObject) {
       setStatus({
         type: "error",
-        message: `Osiągnięto limit ${storageConfig.maxPhotosPerObject} zdjęć dla tego obiektu`,
+        message: `Osiągnięto limit ${storageConfig.maxPhotosPerObject} zdjęć`,
       });
       return;
     }
@@ -224,8 +389,29 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
     }
     if (validFiles.length === 0) return;
 
-    let currentObjectId = objectId;
+    // Guest mode: store as blob URLs, no API calls
+    if (isGuest) {
+      const startIndex = photos.length;
+      const newPhotos: PhotoRecord[] = validFiles.map((file) => ({
+        id: crypto.randomUUID(),
+        objectId: "guest",
+        originalUrl: URL.createObjectURL(file),
+        fileSizeBytes: file.size,
+        mimeType: file.type,
+        createdAt: new Date().toISOString(),
+      }));
+      setPhotos((prev) => [...prev, ...newPhotos]);
+      setGuestFiles((prev) => {
+        const m = new Map(prev);
+        newPhotos.forEach((p, i) => m.set(p.id, validFiles[i]!));
+        return m;
+      });
+      setSelectedPhotoIndex(startIndex + newPhotos.length - 1);
+      return;
+    }
 
+    // Cloud mode: create object if needed, then upload
+    let currentObjectId = objectId;
     if (!currentObjectId) {
       setCreatingObject(true);
       try {
@@ -242,7 +428,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
         currentObjectId = data.object.id;
         setObjectId(currentObjectId);
         setObject(data.object);
-        window.history.replaceState({}, "", `/app/editor?objectId=${currentObjectId}`);
+        window.history.replaceState({}, "", `/?objectId=${currentObjectId}`);
       } catch (err) {
         setStatus({
           type: "error",
@@ -254,29 +440,122 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       setCreatingObject(false);
     }
 
-    // Upload files, assigning each a sequential photo index
     const startIndex = photos.length;
     validFiles.forEach((file, i) => {
       void uploadSingleFile(file, currentObjectId!, startIndex + i);
     });
   }
 
+  /* ── Delete photo ────────────────────────────────────────────────────── */
+
+  async function handleDeletePhoto(photoId: string) {
+    if (isGuest) {
+      setPhotos((prev) => {
+        const photo = prev.find((p) => p.id === photoId);
+        if (photo) URL.revokeObjectURL(photo.originalUrl);
+        const next = prev.filter((p) => p.id !== photoId);
+        setSelectedPhotoIndex((i) => Math.min(i, Math.max(0, next.length - 1)));
+        return next;
+      });
+      setGuestFiles((prev) => {
+        const m = new Map(prev);
+        m.delete(photoId);
+        return m;
+      });
+      return;
+    }
+
+    if (!objectId) return;
+    try {
+      const res = await fetch(`/api/objects/${objectId}/photos/${photoId}`, { method: "DELETE" });
+      if (res.ok) {
+        setPhotos((prev) => {
+          const next = prev.filter((p) => p.id !== photoId);
+          setSelectedPhotoIndex((i) => Math.min(i, Math.max(0, next.length - 1)));
+          return next;
+        });
+      } else {
+        const data = (await res.json()) as { error?: string };
+        setStatus({ type: "error", message: data.error ?? "Nie można usunąć zdjęcia" });
+      }
+    } catch {
+      setStatus({ type: "error", message: "Błąd sieci podczas usuwania zdjęcia" });
+    }
+  }
+
   /* ── Transform ───────────────────────────────────────────────────────── */
 
-  async function handleTransform(styleKey: string, customPrompt?: string, model?: string) {
-    const selectedPhoto = photos[selectedPhotoIndex] ?? photos[0];
-
-    if (!objectId || !selectedPhoto) {
-      // No photo yet — show guidance, don't block
-      setStatus({
-        type: "info",
-        message: "Najpierw wgraj zdjęcie — przeciągnij je do lewego panelu lub kliknij +",
-      });
+  async function handleGuestTransform(
+    styleKey: string,
+    selectedPhoto: PhotoRecord,
+    customPrompt?: string,
+  ) {
+    const file = guestFiles.get(selectedPhoto.id);
+    if (!file) {
+      setStatus({ type: "info", message: "Brak pliku do transformacji" });
       return;
     }
 
     setIsTransforming(true);
     setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
+    setScoreAfter(null);
+    setStatus({ type: "progress", message: "Transformacja AI w toku… może potrwać 15–30 sekund" });
+
+    try {
+      const imageBase64 = await fileToBase64(file);
+      const res = await fetch("/api/transformations/guest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64,
+          mimeType: file.type,
+          style_name: styleKey,
+          custom_prompt: customPrompt,
+          model: selectedModel,
+        }),
+      });
+
+      const data = (await res.json()) as { result_base64?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Transformacja nie powiodła się");
+
+      setResultUrl(`data:image/jpeg;base64,${data.result_base64}`);
+      setStatus({
+        type: "success",
+        message: "Transformacja zakończona — zaloguj się, aby zapisać do chmury ✓",
+      });
+      setTimeout(() => setStatus({ type: "idle" }), 7000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Transformacja nie powiodła się";
+      setStatus({ type: "error", message: msg });
+    } finally {
+      setIsTransforming(false);
+    }
+  }
+
+  async function handleTransform(styleKey: string, customPrompt?: string, model?: string) {
+    const selectedPhoto = photos[selectedPhotoIndex] ?? photos[0];
+
+    if (!selectedPhoto) {
+      setStatus({ type: "info", message: "Najpierw wgraj zdjęcie — przeciągnij do lewego panelu" });
+      return;
+    }
+
+    if (isGuest) {
+      await handleGuestTransform(styleKey, selectedPhoto, customPrompt);
+      return;
+    }
+
+    if (!objectId) {
+      setStatus({ type: "info", message: "Najpierw wgraj zdjęcie — przeciągnij do lewego panelu" });
+      return;
+    }
+
+    setIsTransforming(true);
+    setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
     setScoreAfter(null);
     setStatus({ type: "progress", message: "Transformacja AI w toku… może potrwać 15–30 sekund" });
 
@@ -294,26 +573,21 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
       });
 
       const data = (await res.json()) as { jobs?: TransformationJob[]; error?: string };
-
-      if (!res.ok) {
-        throw new Error(data.error ?? "Transformacja nie powiodła się");
-      }
+      if (!res.ok) throw new Error(data.error ?? "Transformacja nie powiodła się");
 
       const job = data.jobs?.[0];
       if (!job) throw new Error("Serwer nie zwrócił danych transformacji");
 
       if (job.status === "full_ready" && job.result_url) {
         setResultUrl(job.result_url);
+        setCurrentJobId(job.id);
         if (job.score_after) setScoreAfter(job.score_after);
         setStatus({ type: "success", message: "Transformacja zakończona pomyślnie ✓" });
         setTimeout(() => setStatus({ type: "idle" }), 5000);
       } else if (job.status === "failed") {
         throw new Error(job.error_message ?? "Transformacja zakończyła się błędem");
       } else {
-        setStatus({
-          type: "info",
-          message: `Transformacja w trakcie przetwarzania (status: ${job.status})`,
-        });
+        setStatus({ type: "info", message: `Transformacja w toku (status: ${job.status})` });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Transformacja nie powiodła się";
@@ -323,16 +597,60 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
     }
   }
 
-  /* ── Category change — resets style selection ───────────────────────── */
+  /* ── Save result ─────────────────────────────────────────────────────── */
+
+  async function handleSaveResult() {
+    if (isGuest) {
+      openAuthModal("signin");
+      return;
+    }
+    if (!currentJobId || savingResult || resultSaved) return;
+    setSavingResult(true);
+    try {
+      const res = await fetch(`/api/transformations/${currentJobId}/save`, { method: "POST" });
+      if (res.ok) {
+        setResultSaved(true);
+        setStatus({ type: "success", message: "Wynik transformacji zapisany w bibliotece ✓" });
+        setTimeout(() => setStatus({ type: "idle" }), 4000);
+      } else {
+        const data = (await res.json()) as { error?: string };
+        setStatus({ type: "error", message: data.error ?? "Nie można zapisać wyniku" });
+      }
+    } catch {
+      setStatus({ type: "error", message: "Błąd sieci podczas zapisywania wyniku" });
+    } finally {
+      setSavingResult(false);
+    }
+  }
+
+  function handleClearResult() {
+    setResultUrl(null);
+    setCurrentJobId(null);
+    setResultSaved(false);
+    setScoreAfter(null);
+  }
+
+  /* ── Category change ─────────────────────────────────────────────────── */
 
   function handleCategoryChange(c: ObjectCategory) {
     setCategory(c);
     setSelectedStyleKey(null);
   }
 
-  /* ── Save flow ───────────────────────────────────────────────────────── */
+  /* ── Prompt drawer ───────────────────────────────────────────────────── */
+
+  function handleApplyPrompt(prompt: string) {
+    toolbarRef.current?.applyPrompt(prompt);
+    setShowPromptDrawer(false);
+  }
+
+  /* ── Object save (name) ──────────────────────────────────────────────── */
 
   function handleOpenSave() {
+    if (isGuest) {
+      openAuthModal("signin");
+      return;
+    }
     setSaveName(object.name === "Nowy projekt" ? "" : object.name);
     setShowSaveModal(true);
   }
@@ -350,7 +668,6 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
         const data = (await res.json()) as { object: ObjectRecord };
         setObject(data.object);
         setShowSaveModal(false);
-        // Stay on editor — do NOT redirect
         setStatus({ type: "success", message: `Zapisano jako „${data.object.name}" ✓` });
         setTimeout(() => setStatus({ type: "idle" }), 4000);
       } else {
@@ -369,15 +686,22 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
   /* ── Render ──────────────────────────────────────────────────────────── */
 
   const selectedPhoto = photos[selectedPhotoIndex] ?? photos[0];
+  const currentPromptText = toolbarRef.current?.getCurrentPrompt() ?? "";
 
   return (
     <div className="editor-shell">
-      <AppNavBar userEmail={userEmail} />
+      <AppNavBar
+        user={user}
+        onSignIn={() => openAuthModal("signin")}
+        onBrowseObjects={() => void openObjectBrowser()}
+        onNewProject={handleNewProject}
+      />
 
       <div>
         <TransformToolbar
+          ref={toolbarRef}
           category={category}
-          objectName={object.name}
+          objectName={isGuest ? "Tryb gość" : object.name}
           selectedStyleKey={selectedStyleKey}
           onStyleSelect={setSelectedStyleKey}
           onCategoryChange={handleCategoryChange}
@@ -385,15 +709,16 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
           isTransforming={isTransforming}
-          isSaveable={isSaveable}
+          isSaveable={isSaveable && !isGuest}
           onSave={handleOpenSave}
+          onOpenPrompts={() => setShowPromptDrawer(true)}
         />
       </div>
 
       <StatusBar entry={displayStatus} />
 
       <div className="editor-main">
-        <ScoreSidebar scoreBefore={MOCK_SCORE_BEFORE} scoreAfter={scoreAfter} />
+        <ScoreSidebar scoreBefore={scoreBefore} scoreAfter={scoreAfter} />
 
         {loading ? (
           <div
@@ -415,6 +740,7 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
             onSelectIndex={setSelectedPhotoIndex}
             uploads={uploads}
             onFilesReady={(files) => void handleFilesReady(files)}
+            onDeletePhoto={(id) => void handleDeletePhoto(id)}
             disabled={creatingObject}
           />
         )}
@@ -428,119 +754,411 @@ export default function EditorShell({ objectId: initialObjectId, userEmail }: Ed
           onTogglePreview={() =>
             setPreviewMode((prev) => (prev === "after" ? "before-after" : "after"))
           }
+          currentJobId={currentJobId}
+          resultSaved={resultSaved}
+          onSaveResult={() => void handleSaveResult()}
+          onClearResult={handleClearResult}
         />
       </div>
 
-      {/* Save modal — stays on editor after save */}
-      {showSaveModal && (
+      {/* Prompt drawer */}
+      <PromptDrawer
+        open={showPromptDrawer}
+        category={category}
+        currentPrompt={currentPromptText}
+        onClose={() => setShowPromptDrawer(false)}
+        onApply={handleApplyPrompt}
+      />
+
+      {/* Object browser drawer (logged-in users) */}
+      {showObjectBrowser && (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 9999,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            zIndex: 1000,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowSaveModal(false);
           }}
         >
           <div
+            style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.5)" }}
+            onClick={() => setShowObjectBrowser(false)}
+          />
+          <div
             style={{
-              backgroundColor: "var(--dt-color-canvas)",
-              borderRadius: "12px",
-              padding: "28px 32px",
-              width: "380px",
-              maxWidth: "90vw",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+              position: "relative",
+              width: "300px",
+              backgroundColor: "#0d0d1f",
+              borderRight: "1px solid rgba(255,255,255,0.08)",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
             }}
           >
-            <h2
+            <div
               style={{
-                fontSize: "18px",
-                fontWeight: 700,
-                color: "var(--dt-color-ink)",
-                margin: "0 0 6px 0",
+                padding: "16px 20px",
+                borderBottom: "1px solid rgba(255,255,255,0.08)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexShrink: 0,
               }}
             >
-              Zapisz obiekt
-            </h2>
-            <p style={{ fontSize: "13px", color: "var(--dt-color-steel)", margin: "0 0 20px 0" }}>
-              Po zapisaniu pozostaniesz w edytorze.
-            </p>
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "var(--dt-color-steel)",
-                  display: "block",
-                  marginBottom: "6px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                }}
-              >
-                Nazwa obiektu
-              </label>
-              <input
-                type="text"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleConfirmSave();
-                  if (e.key === "Escape") setShowSaveModal(false);
-                }}
-                placeholder="np. BMW 3 Series 2021, Skórzana kurtka…"
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "9px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--dt-color-hairline)",
-                  fontSize: "14px",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  color: "var(--dt-color-ink)",
-                }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>Obiekty</span>
               <button
-                onClick={() => setShowSaveModal(false)}
+                onClick={handleNewProject}
                 style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--dt-color-hairline)",
-                  background: "none",
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.7)",
+                  background: "rgba(99,102,241,0.2)",
+                  border: "1px solid rgba(99,102,241,0.4)",
+                  borderRadius: "6px",
+                  padding: "4px 10px",
                   cursor: "pointer",
-                  fontSize: "13px",
-                  color: "var(--dt-color-slate)",
                 }}
               >
-                Anuluj
+                + Nowy
               </button>
-              <button
-                onClick={() => void handleConfirmSave()}
-                disabled={!saveName.trim() || saving}
-                style={{
-                  padding: "8px 20px",
-                  borderRadius: "8px",
-                  backgroundColor: saveName.trim() && !saving ? "#10b981" : "#9ca3af",
-                  color: "#fff",
-                  border: "none",
-                  cursor: saveName.trim() && !saving ? "pointer" : "not-allowed",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                }}
-              >
-                {saving ? "Zapisuję…" : "Zapisz"}
-              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
+              {objectBrowserLoading ? (
+                <div
+                  style={{ padding: "20px", color: "rgba(255,255,255,0.4)", fontSize: "13px" }}
+                >
+                  Ładowanie…
+                </div>
+              ) : objectList.length === 0 ? (
+                <div
+                  style={{ padding: "20px", color: "rgba(255,255,255,0.4)", fontSize: "13px" }}
+                >
+                  Brak obiektów — utwórz pierwszy projekt
+                </div>
+              ) : (
+                objectList.map((obj) => (
+                  <div
+                    key={obj.id}
+                    onClick={() => void handleLoadObject(obj.id)}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      marginBottom: "2px",
+                      border: "1px solid transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.backgroundColor =
+                        "rgba(255,255,255,0.06)";
+                      (e.currentTarget as HTMLDivElement).style.borderColor =
+                        "rgba(255,255,255,0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent";
+                      (e.currentTarget as HTMLDivElement).style.borderColor = "transparent";
+                    }}
+                  >
+                    <div style={{ fontSize: "13px", fontWeight: 500, color: "#fff" }}>
+                      {obj.name}
+                    </div>
+                    {obj.category && (
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "rgba(255,255,255,0.35)",
+                          marginTop: "2px",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {obj.category}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Auth modal */}
+      {showAuthModal && (
+        <Modal onDismiss={() => setShowAuthModal(false)}>
+          <div style={{ width: "340px" }}>
+            {/* Brand */}
+            <div style={{ textAlign: "center", marginBottom: "24px" }}>
+              <div
+                style={{ fontSize: "18px", fontWeight: 700, color: "var(--dt-color-ink)", marginBottom: "4px" }}
+              >
+                Omnilister AI
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--dt-color-steel)" }}>
+                {authMode === "signin"
+                  ? "Zaloguj się, aby zapisywać i pobierać obiekty"
+                  : "Utwórz konto, aby zapisywać swoją pracę"}
+              </div>
+            </div>
+
+            {/* Mode tabs */}
+            {!authSuccess && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "2px",
+                  marginBottom: "20px",
+                  background: "var(--dt-color-surface)",
+                  borderRadius: "8px",
+                  padding: "3px",
+                }}
+              >
+                {(["signin", "signup"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      setAuthMode(mode);
+                      setAuthError(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "6px 0",
+                      borderRadius: "6px",
+                      border: "none",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      backgroundColor:
+                        authMode === mode ? "var(--dt-color-canvas)" : "transparent",
+                      color:
+                        authMode === mode ? "var(--dt-color-ink)" : "var(--dt-color-steel)",
+                      boxShadow:
+                        authMode === mode ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                    }}
+                  >
+                    {mode === "signin" ? "Logowanie" : "Rejestracja"}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {authSuccess ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "20px 0",
+                  color: "var(--dt-color-success)",
+                  fontSize: "14px",
+                }}
+              >
+                Sprawdź skrzynkę e-mail i potwierdź konto, aby się zalogować.
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+                  <input
+                    type="email"
+                    placeholder="E-mail"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void handleAuth(); }}
+                    autoFocus
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--dt-color-hairline)",
+                      fontSize: "14px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      color: "var(--dt-color-ink)",
+                    }}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Hasło"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void handleAuth(); }}
+                    style={{
+                      width: "100%",
+                      padding: "9px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--dt-color-hairline)",
+                      fontSize: "14px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                      color: "var(--dt-color-ink)",
+                    }}
+                  />
+                </div>
+
+                {authError && (
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--dt-color-error)",
+                      marginBottom: "12px",
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      backgroundColor: "oklch(0.97 0.01 25)",
+                    }}
+                  >
+                    {authError}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => void handleAuth()}
+                  disabled={authLoading || !authEmail.trim() || !authPassword.trim()}
+                  style={{
+                    width: "100%",
+                    padding: "10px 0",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor:
+                      authLoading || !authEmail.trim() || !authPassword.trim()
+                        ? "#9ca3af"
+                        : "#6366f1",
+                    color: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor:
+                      authLoading || !authEmail.trim() || !authPassword.trim()
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  {authLoading
+                    ? "Przetwarzanie…"
+                    : authMode === "signin"
+                      ? "Zaloguj się"
+                      : "Utwórz konto"}
+                </button>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Object save modal (cloud mode) */}
+      {showSaveModal && (
+        <Modal onDismiss={() => setShowSaveModal(false)}>
+          <h2
+            style={{
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "var(--dt-color-ink)",
+              margin: "0 0 6px 0",
+            }}
+          >
+            Zapisz obiekt
+          </h2>
+          <p style={{ fontSize: "13px", color: "var(--dt-color-steel)", margin: "0 0 20px 0" }}>
+            Po zapisaniu pozostaniesz w edytorze.
+          </p>
+          <div style={{ marginBottom: "20px" }}>
+            <label
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                color: "var(--dt-color-steel)",
+                display: "block",
+                marginBottom: "6px",
+                textTransform: "uppercase",
+                letterSpacing: "0.07em",
+              }}
+            >
+              Nazwa obiektu
+            </label>
+            <input
+              type="text"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleConfirmSave();
+                if (e.key === "Escape") setShowSaveModal(false);
+              }}
+              placeholder="np. BMW 3 Series 2021, Skórzana kurtka…"
+              autoFocus
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--dt-color-hairline)",
+                fontSize: "14px",
+                outline: "none",
+                boxSizing: "border-box",
+                color: "var(--dt-color-ink)",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+            <button
+              onClick={() => setShowSaveModal(false)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--dt-color-hairline)",
+                background: "none",
+                cursor: "pointer",
+                fontSize: "13px",
+                color: "var(--dt-color-slate)",
+              }}
+            >
+              Anuluj
+            </button>
+            <button
+              onClick={() => void handleConfirmSave()}
+              disabled={!saveName.trim() || saving}
+              style={{
+                padding: "8px 20px",
+                borderRadius: "8px",
+                backgroundColor: saveName.trim() && !saving ? "#10b981" : "#9ca3af",
+                color: "#fff",
+                border: "none",
+                cursor: saveName.trim() && !saving ? "pointer" : "not-allowed",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              {saving ? "Zapisuję…" : "Zapisz"}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ── Shared modal shell ──────────────────────────────────────────────────── */
+
+function Modal({ children, onDismiss }: { children: React.ReactNode; onDismiss: () => void }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onDismiss();
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "var(--dt-color-canvas)",
+          borderRadius: "12px",
+          padding: "28px 32px",
+          maxWidth: "90vw",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

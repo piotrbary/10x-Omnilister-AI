@@ -107,6 +107,7 @@ async function processJob(
         .update({
           status: "full_ready",
           result_url: resultUrl,
+          result_storage_path: fullPath,
           result_file_size_bytes: resultFileSizeBytes,
           error_message: null,
           updated_at: new Date().toISOString(),

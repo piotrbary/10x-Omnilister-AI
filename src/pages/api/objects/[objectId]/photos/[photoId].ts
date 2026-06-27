@@ -29,10 +29,8 @@ export const DELETE: APIRoute = async (context) => {
     return new Response(JSON.stringify({ error: "Photo not found" }), { status: 404 });
   }
 
-  // Extract storage path from public URL (last 3 segments: userId/objectId/fileName)
-  const urlObj = new URL(photo.original_url);
-  const segments = urlObj.pathname.split("/").filter(Boolean);
-  const storagePath = segments.slice(-3).join("/");
+  const fileName = photo.original_url.split("/").at(-1) ?? "";
+  const storagePath = `${user.id}/${objectId}/${fileName}`;
 
   // Delete DB row first — the trigger decrements profiles.storage_used_bytes
   const { error: deleteError } = await supabase.from("photos").delete().eq("id", photoId).eq("user_id", user.id);

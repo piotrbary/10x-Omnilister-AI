@@ -1,0 +1,15 @@
+flowchart LR
+
+subgraph 0["src"]
+1["components"]
+2["data"]
+3["lib"]
+4["middleware.ts"]
+5["pages"]
+6["types"]
+end
+1-->3
+1-->2
+4-->3
+5-->3
+5-->6

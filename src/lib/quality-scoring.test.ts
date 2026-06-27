@@ -104,6 +104,7 @@ describe("scorePhoto — retry behavior", () => {
       ok: false,
       status: 503,
       statusText: "Service Unavailable",
+      text: async () => "",
     } as unknown as Response);
 
     await expect(scorePhoto("https://example.com/photo.jpg", "car")).rejects.toThrow("503");

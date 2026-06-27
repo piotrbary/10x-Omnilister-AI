@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { aiConfig } from "@/lib/config";
 import type { TransformationJob, QualityScoreSnapshot, FeedbackValue } from "@/types/transformations";
 
@@ -39,6 +40,17 @@ export function TransformationJobCard({
   const isFailed = job.status === "failed";
   const isPending = !isTerminal && !isFailed;
 
+  const [resultImgUrl, setResultImgUrl] = useState(job.result_url ?? "");
+  useEffect(() => {
+    if (!isTerminal || !job.id) return;
+    fetch(`/api/transformations/${job.id}/result-url`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ url: string }>) : null))
+      .then((data) => {
+        if (data?.url) setResultImgUrl(data.url);
+      })
+      .catch(() => undefined);
+  }, [job.id, isTerminal]);
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
       {/* Pending */}
@@ -79,7 +91,7 @@ export function TransformationJobCard({
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs text-white/40">After</span>
-              <img src={job.result_url ?? ""} alt="After" className="aspect-square w-full rounded-lg object-cover" />
+              <img src={resultImgUrl} alt="After" className="aspect-square w-full rounded-lg object-cover" />
             </div>
           </div>
 

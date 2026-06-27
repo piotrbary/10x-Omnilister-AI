@@ -1,0 +1,31 @@
+flowchart LR
+
+subgraph 0["src"]
+subgraph 1["pages"]
+subgraph 2["api"]
+subgraph 3["transformations"]
+4["start.ts"]
+end
+end
+end
+subgraph 5["lib"]
+6["supabase.ts"]
+7["transformation-processor.ts"]
+8["config.ts"]
+9["openrouter-images.ts"]
+A["quality-scoring.ts"]
+B["transformation-styles.ts"]
+end
+subgraph C["types"]
+D["transformations.ts"]
+end
+end
+4-->6
+4-->7
+4-->B
+4-->D
+7-->8
+7-->9
+7-->A
+9-->8
+A-->8

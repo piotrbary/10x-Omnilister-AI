@@ -14,6 +14,7 @@ interface OriginalImagePanelProps {
   onSelectIndex: (i: number) => void;
   uploads: UploadItem[];
   onFilesReady: (files: FileList) => void;
+  onDeletePhoto?: (photoId: string) => void;
   disabled?: boolean;
 }
 
@@ -23,6 +24,7 @@ export default function OriginalImagePanel({
   onSelectIndex,
   uploads,
   onFilesReady,
+  onDeletePhoto,
   disabled = false,
 }: OriginalImagePanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -177,22 +179,60 @@ export default function OriginalImagePanel({
             {photos.map((p, i) => (
               <div
                 key={p.id}
-                onClick={() => onSelectIndex(i)}
                 style={{
+                  position: "relative",
                   width: "40px",
                   height: "40px",
-                  borderRadius: "6px",
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  border: i === safeIndex ? "2px solid #7c3aed" : "2px solid transparent",
                   flexShrink: 0,
                 }}
               >
-                <img
-                  src={p.originalUrl}
-                  alt={`Zdjęcie ${i + 1}`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                <div
+                  onClick={() => onSelectIndex(i)}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "6px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    border: i === safeIndex ? "2px solid #7c3aed" : "2px solid transparent",
+                  }}
+                >
+                  <img
+                    src={p.originalUrl}
+                    alt={`Zdjęcie ${i + 1}`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                {onDeletePhoto && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeletePhoto(p.id);
+                    }}
+                    title="Usuń zdjęcie"
+                    style={{
+                      position: "absolute",
+                      top: "-4px",
+                      right: "-4px",
+                      width: "14px",
+                      height: "14px",
+                      borderRadius: "50%",
+                      backgroundColor: "#ef4444",
+                      border: "none",
+                      color: "#fff",
+                      fontSize: "9px",
+                      lineHeight: 1,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             ))}
             <button

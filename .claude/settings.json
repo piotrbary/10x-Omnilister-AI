@@ -2,5 +2,18 @@
   "enabledPlugins": {
     "cloudflare@cloudflare": true,
     "ponytail@ponytail": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "AI_AGENT=1 bash -c 'FILE=$(jq -r .tool_input.file_path) && npx vitest related \"$FILE\" --run'"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -36,19 +36,6 @@ export const MOCK_PHOTOS: PhotoRecord[] = [
   },
 ];
 
-export const MOCK_SCORE_BEFORE: QualityScoreSnapshot = {
-  overall: 5.8,
-  is_sales_ready: false,
-  sharpness: 6.0,
-  lighting: 5.5,
-  background: 4.5,
-  object_features: 6.0,
-  damage_defects: 5.0,
-  labels: 4.5,
-  angle_coverage: 6.5,
-  sales_readiness: 4.0,
-};
-
 export const MOCK_SCORE_AFTER: QualityScoreSnapshot = {
   overall: 7.9,
   is_sales_ready: true,

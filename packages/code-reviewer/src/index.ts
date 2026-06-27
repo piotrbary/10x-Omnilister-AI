@@ -118,17 +118,41 @@ function getDiff(): string {
 const MAX_CHUNK_CHARS = 150_000;
 
 /**
+ * Break one file's diff into pieces under `max`, losing nothing. Splits by hunk
+ * (`@@`), repeating the file header on each piece so every piece is reviewable in
+ * context. A single hunk larger than `max` is sliced into windows (may cut a line,
+ * but no content is dropped).
+ */
+function splitFile(file: string, max: number): string[] {
+  if (file.length <= max) return [file];
+
+  const firstHunk = file.search(/^@@ /m);
+  const header = firstHunk === -1 ? '' : file.slice(0, firstHunk);
+  const body = firstHunk === -1 ? file : file.slice(firstHunk);
+  const room = Math.max(1, max - header.length);
+
+  const pieces: string[] = [];
+  for (const hunk of body.split(/(?=^@@ )/m).filter(Boolean)) {
+    if (header.length + hunk.length <= max) {
+      pieces.push(header + hunk);
+    } else {
+      for (let i = 0; i < hunk.length; i += room) pieces.push(header + hunk.slice(i, i + room));
+    }
+  }
+  return pieces;
+}
+
+/**
  * Split a diff into review chunks, each under MAX_CHUNK_CHARS. Files (sections
- * starting with `diff --git`) are packed greedily so small files share a call.
- * ponytail: a single file larger than the budget is truncated, not split mid-
- * hunk — fine for review; split per-hunk only if huge single files become common.
+ * starting with `diff --git`) are split as needed (see splitFile) then packed
+ * greedily so small pieces share a call. No diff content is ever dropped.
  */
 function chunkDiff(diff: string): string[] {
   const files = diff.split(/(?=^diff --git )/m).filter((p) => p.trim());
+  const pieces = files.flatMap((f) => splitFile(f, MAX_CHUNK_CHARS));
   const chunks: string[] = [];
   let current = '';
-  for (const file of files) {
-    const piece = file.length > MAX_CHUNK_CHARS ? file.slice(0, MAX_CHUNK_CHARS) : file;
+  for (const piece of pieces) {
     if (current && current.length + piece.length > MAX_CHUNK_CHARS) {
       chunks.push(current);
       current = '';

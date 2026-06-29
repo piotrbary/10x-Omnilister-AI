@@ -19,6 +19,9 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+# real-secret test env variants (.env.test and .env.test.remote are committed templates)
+.env.test.local
+.env.test.*.local
 
 # cloudflare
 .dev.vars

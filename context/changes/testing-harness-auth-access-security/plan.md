@@ -520,27 +520,27 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Automated
 
-- [x] 2.1 Guest test passes against real OpenRouter
-- [x] 2.2 Scoring integration test passes against real OpenRouter, asserting invariants
-- [x] 2.3 Surviving retry/error unit cases still pass (mocked failures)
-- [x] 2.4 Tests run without any Supabase or `astro:env/server` mock
+- [x] 2.1 Guest test passes against real OpenRouter — 4b6098f
+- [x] 2.2 Scoring integration test passes against real OpenRouter, asserting invariants — 4b6098f
+- [x] 2.3 Surviving retry/error unit cases still pass (mocked failures) — 4b6098f
+- [x] 2.4 Tests run without any Supabase or `astro:env/server` mock — 4b6098f
 
 #### Manual
 
-- [x] 2.5 OpenRouter spend for one run is negligible
-- [x] 2.6 `OPENROUTER_API_KEY` resolution from real env confirmed
+- [x] 2.5 OpenRouter spend for one run is negligible — 4b6098f
+- [x] 2.6 `OPENROUTER_API_KEY` resolution from real env confirmed — 4b6098f
 
 ### Phase 3: Supabase test fixtures
 
 #### Automated
 
-- [ ] 3.1 `supabase start` + seed yields two sign-in-able users
-- [ ] 3.2 Setup helper returns a session-bearing client per user
+- [x] 3.1 `supabase start` + seed yields two sign-in-able users
+- [x] 3.2 Setup helper returns a session-bearing client per user
 
 #### Manual
 
-- [ ] 3.3 Row created as A is not visible to B (RLS sanity)
-- [ ] 3.4 Same smoke runs against remote via `.env.test.remote`
+- [x] 3.3 Row created as A is not visible to B (RLS sanity) — verified via throwaway test: A sees its own `objects` row, B sees 0 rows, no error
+- [x] 3.4 Same smoke runs against remote via `.env.test.remote` (DEFERRED: no safe remote to seed — only remote available is the prod DB; override path documented in `.env.test.remote`)
 
 ### Phase 4: Risk #4 — IDOR fix + ownership tests
 

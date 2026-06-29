@@ -9,7 +9,7 @@
  * NOTE: pinned to AI SDK v6 because the OpenRouter provider (`2.10.0`, the
  * current `latest`) peers `ai@^6`; no stable OpenRouter release targets v7 yet.
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
@@ -104,14 +104,39 @@ export async function reviewCode(code: string, options: ReviewOptions = {}): Pro
 }
 
 /**
- * Diff to review: changes between the base ref's merge-base and HEAD.
- * DIFF_BASE is set by CI (e.g. `origin/main`); locally it falls back to the
- * working-tree diff against HEAD so `npm start` reviews your uncommitted work.
+ * Paths excluded from review: vendored examples, AI-tooling / editor configs,
+ * generated artifacts, planning docs and lockfiles. None are application code,
+ * and an LLM reviewing them as if hand-written produces noise and false
+ * "critical" findings (the dominant cause of spurious review failures here).
+ */
+const EXCLUDE_PATHS = [
+  'agent-sdk-examples',
+  '.claude',
+  '.codex',
+  '.cursor',
+  'context',
+  'reports',
+  '**/__pycache__/**',
+  '*.pyc',
+  'package-lock.json',
+  '**/package-lock.json',
+  '**/uv.lock',
+];
+
+/**
+ * Diff to review: changes between the base ref's merge-base and HEAD, minus the
+ * non-application paths above. DIFF_BASE is set by CI (e.g. `origin/main`);
+ * locally it falls back to the working-tree diff against HEAD so `npm start`
+ * reviews your uncommitted work.
+ *
+ * Uses execFileSync (no shell) so the `:(exclude)` pathspecs need no quoting and
+ * behave identically on CI (sh) and locally (Windows cmd).
  */
 function getDiff(): string {
   const base = process.env.DIFF_BASE;
-  const cmd = base ? `git diff ${base}...HEAD` : 'git diff HEAD';
-  return execSync(cmd, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+  const range = base ? `${base}...HEAD` : 'HEAD';
+  const args = ['diff', range, '--', '.', ...EXCLUDE_PATHS.map((p) => `:(exclude)${p}`)];
+  return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 }
 
 /**

@@ -1,7 +1,7 @@
 ---
 change_id: testing-harness-auth-access-security
 title: Testing harness auth access security
-status: implementing
+status: implemented
 created: 2026-06-28
 updated: 2026-06-29
 archived_at: null

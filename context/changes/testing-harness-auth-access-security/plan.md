@@ -570,8 +570,8 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Automated
 
-- [x] 6.1 CI test job is green on a PR (ADAPTED — DEFERRED: per project `CLAUDE.md`, "Do not author CI/CD pipelines from scratch or write GitHub Actions YAML"; CI config is owned by another lesson. §5 gate "unit+integration required after Phase 1" is named in test-plan.md but wiring is left to the owning lesson. No `ci.yml` edit made.)
-- [x] 6.2 `test-plan.md` §3 Phase 1 status reads `complete` — §3 row flipped to `complete`; §6.2 + §6.6 cookbook filled
+- [x] 6.1 CI test job is green on a PR (ADAPTED — DEFERRED: per project `CLAUDE.md`, "Do not author CI/CD pipelines from scratch or write GitHub Actions YAML"; CI config is owned by another lesson. §5 gate "unit+integration required after Phase 1" is named in test-plan.md but wiring is left to the owning lesson. No `ci.yml` edit made.) — 9d1913b
+- [x] 6.2 `test-plan.md` §3 Phase 1 status reads `complete` — §3 row flipped to `complete`; §6.2 + §6.6 cookbook filled — 9d1913b
 
 #### Manual
 

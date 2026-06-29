@@ -112,12 +112,16 @@ export async function reviewCode(code: string, options: ReviewOptions = {}): Pro
 const EXCLUDE_PATHS = [
   'agent-sdk-examples',
   '.claude',
+  '**/.claude',
   '.codex',
+  '**/.codex',
   '.cursor',
+  '**/.cursor',
   'context',
   'reports',
   '**/__pycache__/**',
   '*.pyc',
+  '**/*.pyc',
   'package-lock.json',
   '**/package-lock.json',
   '**/uv.lock',
@@ -133,10 +137,14 @@ const EXCLUDE_PATHS = [
  * behave identically on CI (sh) and locally (Windows cmd).
  */
 function getDiff(): string {
+  // Anchor to the repo root: the CI workflow runs this with
+  // working-directory=packages/code-reviewer, and a cwd-relative `.` pathspec
+  // would scope the diff to that subdir only (reviewing nothing but ourselves).
+  const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
   const base = process.env.DIFF_BASE;
   const range = base ? `${base}...HEAD` : 'HEAD';
   const args = ['diff', range, '--', '.', ...EXCLUDE_PATHS.map((p) => `:(exclude)${p}`)];
-  return execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+  return execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
 }
 
 /**

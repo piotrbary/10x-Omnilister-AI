@@ -125,6 +125,8 @@ const EXCLUDE_PATHS = [
   'package-lock.json',
   '**/package-lock.json',
   '**/uv.lock',
+  '.env.test*',
+  '**/.env.test*',
 ];
 
 /**

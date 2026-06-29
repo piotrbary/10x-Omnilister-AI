@@ -1,0 +1,37 @@
+name: Tests
+
+# Integration + unit suite gate (test-plan §5 "unit+integration required after
+# Phase 1"). Runs the real-service suite against a local Supabase. Kept separate
+# from ci.yml on purpose. Triggers on main and master (ci.yml's pre-existing
+# master-only trigger is a known quirk — see plan Migration Notes).
+#
+# Requires repo secret OPENROUTER_API_KEY (real-but-cheap OpenRouter calls).
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Start local Supabase (applies migrations + seed.sql)
+        run: npx supabase start
+      - name: Run tests against local Supabase
+        run: |
+          set -a
+          eval "$(npx supabase status -o env)"
+          set +a
+          export SUPABASE_URL="$API_URL"
+          export SUPABASE_KEY="$ANON_KEY"
+          npm test
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

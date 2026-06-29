@@ -255,6 +255,7 @@ export type Database = {
           photo_id: string
           prompt: string
           result_file_size_bytes: number | null
+          result_storage_path: string | null
           result_url: string | null
           retry_count: number
           score_after: Json | null
@@ -273,6 +274,7 @@ export type Database = {
           photo_id: string
           prompt: string
           result_file_size_bytes?: number | null
+          result_storage_path?: string | null
           result_url?: string | null
           retry_count?: number
           score_after?: Json | null
@@ -291,6 +293,7 @@ export type Database = {
           photo_id?: string
           prompt?: string
           result_file_size_bytes?: number | null
+          result_storage_path?: string | null
           result_url?: string | null
           retry_count?: number
           score_after?: Json | null

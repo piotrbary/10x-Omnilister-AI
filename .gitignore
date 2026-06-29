@@ -1,6 +1,14 @@
 # build output
 dist/
 
+# mutation testing scratch
+.stryker-tmp/
+# mutation testing HTML report output
+reports/
+
+# vendored SDK examples (kept locally, not part of this repo)
+agent-sdk-examples/
+
 # generated types
 .astro/
 
@@ -16,6 +24,9 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+# real-secret test env variants (.env.test and .env.test.remote are committed templates)
+.env.test.local
+.env.test.*.local
 
 # cloudflare
 .dev.vars

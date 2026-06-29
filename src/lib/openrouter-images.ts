@@ -52,6 +52,7 @@ Rules:
           ],
         },
       ],
+      max_tokens: aiConfig.maxOutputTokens,
     }),
   });
 
@@ -102,6 +103,7 @@ async function generateImage(
         },
       ],
       modalities: ["image", "text"],
+      max_tokens: aiConfig.maxOutputTokens,
     }),
   });
 

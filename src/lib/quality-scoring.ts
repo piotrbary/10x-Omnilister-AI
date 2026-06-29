@@ -85,7 +85,7 @@ async function _callGptVision(
   signedUrl: string,
   category: ObjectCategory,
   logs: string[],
-  model = aiConfig.visionModel,
+  model: string = aiConfig.visionModel,
 ): Promise<GptCallResult> {
   let lastError: unknown;
   const keyPreview = (OPENROUTER_API_KEY ?? "").slice(0, 8) || "(missing)";
@@ -113,6 +113,7 @@ async function _callGptVision(
             },
           ],
           response_format: { type: "json_schema", json_schema: GPT_JSON_SCHEMA },
+          max_tokens: aiConfig.maxOutputTokens,
         }),
       });
 
@@ -179,7 +180,7 @@ async function _callGptVision(
 export async function scorePhoto(
   signedUrl: string,
   category: ObjectCategory,
-  model = aiConfig.visionModel,
+  model: string = aiConfig.visionModel,
 ): Promise<QualityScoreSnapshot> {
   const { snapshot } = await _callGptVision(signedUrl, category, [], model);
   return snapshot;

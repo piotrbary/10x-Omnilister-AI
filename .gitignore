@@ -3,6 +3,8 @@ dist/
 
 # mutation testing scratch
 .stryker-tmp/
+# mutation testing HTML report output
+reports/
 
 # generated types
 .astro/

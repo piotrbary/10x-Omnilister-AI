@@ -102,6 +102,15 @@ export const POST: APIRoute = async (context) => {
     return new Response(JSON.stringify({ error: "Object not found" }), { status: 404 });
   }
 
+  // Validate the client-supplied storage path before trusting it in getPublicUrl /
+  // DB insert: it must live under this user's + object's prefix. Without this, a
+  // caller can register another user's storage URL (cross-user hijack via the
+  // public original-photos bucket). See lessons.md "Validate client-provided
+  // storage paths before use".
+  if (!path.startsWith(`${user.id}/${objectId}/`)) {
+    return new Response(JSON.stringify({ error: "Invalid storage path" }), { status: 422 });
+  }
+
   const { data: urlData } = supabase.storage.from("original-photos").getPublicUrl(path);
   const originalUrl = urlData.publicUrl;
 

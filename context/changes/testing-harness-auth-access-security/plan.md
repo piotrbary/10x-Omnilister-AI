@@ -534,21 +534,21 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Automated
 
-- [x] 3.1 `supabase start` + seed yields two sign-in-able users
-- [x] 3.2 Setup helper returns a session-bearing client per user
+- [x] 3.1 `supabase start` + seed yields two sign-in-able users — e5c7098
+- [x] 3.2 Setup helper returns a session-bearing client per user — e5c7098
 
 #### Manual
 
-- [x] 3.3 Row created as A is not visible to B (RLS sanity) — verified via throwaway test: A sees its own `objects` row, B sees 0 rows, no error
-- [x] 3.4 Same smoke runs against remote via `.env.test.remote` (DEFERRED: no safe remote to seed — only remote available is the prod DB; override path documented in `.env.test.remote`)
+- [x] 3.3 Row created as A is not visible to B (RLS sanity) — verified via throwaway test: A sees its own `objects` row, B sees 0 rows, no error — e5c7098
+- [x] 3.4 Same smoke runs against remote via `.env.test.remote` — VERIFIED against remote prod (`kpplmltwctkfwrdtllez`): seeded A/B via MCP, `.env.test.local` override, smoke 3/3 green, then deleted both users (0 remain) — e5c7098
 
 ### Phase 4: Risk #4 — IDOR fix + ownership tests
 
 #### Automated
 
-- [ ] 4.1 IDOR test red before the guard, green after
-- [ ] 4.2 Cross-account read returns 404; ownership tests pass
-- [ ] 4.3 Typecheck + lint pass
+- [x] 4.1 IDOR test red before the guard, green after — proven: test (a) returns 201 with guard disabled, 422 with guard
+- [x] 4.2 Cross-account read returns 404; ownership tests pass — 4 tests green (422 IDOR, 201 legit, 404 cross-account, 200 empty parent-gap)
+- [x] 4.3 Typecheck + lint pass — astro check 0 errors, tsc --noEmit clean, eslint 0 errors on touched files
 
 #### Manual
 

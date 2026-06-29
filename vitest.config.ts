@@ -21,7 +21,9 @@ export const astroInline = {
   },
 };
 
-export const makeTestConfig = (include: string[]) =>
+// setupFiles defaults to [] so vitest.config.unit.ts (Stryker) stays lean — only
+// the default (integration-inclusive) config wires the shared test setup module.
+export const makeTestConfig = (include: string[], setupFiles: string[] = []) =>
   getViteConfig(
     {
       resolve: {
@@ -32,9 +34,13 @@ export const makeTestConfig = (include: string[]) =>
       test: {
         include,
         exclude: [".stryker-tmp/**", "agent-sdk-examples/**", "packages/**", "node_modules/**"],
+        setupFiles,
       },
     },
     astroInline,
   );
 
-export default makeTestConfig(["src/**/*.{test,spec}.{ts,tsx}", "tests/integration/**/*.{test,spec}.ts"]);
+export default makeTestConfig(
+  ["src/**/*.{test,spec}.{ts,tsx}", "tests/integration/**/*.{test,spec}.ts"],
+  ["./tests/integration/setup.ts"],
+);

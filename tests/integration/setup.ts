@@ -3,13 +3,15 @@ import { createServerClient } from "@supabase/ssr";
 import { SUPABASE_URL, SUPABASE_KEY } from "astro:env/server";
 import type { Database } from "@/types/database.generated";
 
-// Phase 3 — real-Supabase test fixtures. DB tests import these helpers directly.
-// Credentials mirror supabase/seed.sql. Two seeded, owner-distinct users let
-// cross-account RLS/IDOR tests (Phases 4–5) assert real ownership separation.
+// Phase 3 — real-Supabase test fixtures. Credentials mirror supabase/seed.sql.
+// Two seeded, owner-distinct users let cross-account RLS/IDOR tests (Phases 4–5)
+// assert real ownership separation.
 //
-// ponytail: a plain helper module, not a vitest `setupFiles` entry — a setupFile
-// runs for EVERY test file (including the no-Supabase unit/guest tests), so a
-// Supabase env guard there would wrongly fail them. DB tests opt in by importing.
+// Wired as a vitest `setupFiles` entry (vitest.config.ts) per the Phase 3 contract,
+// and also imported directly by DB tests for its helpers. Safe as a setupFile: it
+// has no top-level side effects — the Supabase env guard lives inside the helpers
+// (signInAs / cookieHeaderFor), which only DB tests call, so unit/guest tests are
+// unaffected even though the module loads for every test file.
 
 export const TEST_USERS = {
   A: { id: "11111111-1111-1111-1111-111111111111", email: "usera@test.local", password: "testpass123" },

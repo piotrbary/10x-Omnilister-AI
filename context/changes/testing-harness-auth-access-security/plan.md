@@ -458,8 +458,8 @@ users fixture. §6.6 — 2–3 lines on the `getViteConfig` bridge + fixture sha
 
 - Guest boundary (#5): unauth call reaches the paid pipeline; caller-chosen
   model; missing-field 400. Real cheap OpenRouter.
-- Ownership (#4): app-layer IDOR → 422; cross-account read → 404; photos-list
-  parent gap documented. Two real users, real RLS.
+- Ownership (#4): app-layer IDOR → 422; legit own-prefix → 201; cross-account
+  read → 404; photos-list parent gap documented. Two real users, real RLS.
 - Registration gate (#3): `signUp` fired + confirm-email contract; middleware
   302 on protected pages.
 

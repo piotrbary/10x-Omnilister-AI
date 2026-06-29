@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# mutation testing scratch
+.stryker-tmp/
+
 # generated types
 .astro/
 

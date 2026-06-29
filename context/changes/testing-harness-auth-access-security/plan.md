@@ -507,28 +507,28 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Automated
 
-- [x] 1.1 `npm test` exits 0 and discovers only `src/**` + `tests/integration/**`
-- [x] 1.2 The two existing unit tests still pass
-- [x] 1.3 Typecheck passes (adapted: no new errors from touched files; baseline pre-existing failures unrelated)
-- [x] 1.4 Lint passes (adapted: touched files clean exit 0; baseline pre-existing failures unrelated)
+- [x] 1.1 `npm test` exits 0 and discovers only `src/**` + `tests/integration/**` — 82d8e55
+- [x] 1.2 The two existing unit tests still pass — 82d8e55
+- [x] 1.3 Typecheck passes (adapted: no new errors from touched files; baseline pre-existing failures unrelated) — 82d8e55
+- [x] 1.4 Lint passes (adapted: touched files clean exit 0; baseline pre-existing failures unrelated) — 82d8e55
 
 #### Manual
 
-- [x] 1.5 `npx stryker run` completes without executing integration tests (scoping proven: Stryker now uses vitest.config.unit.ts → src/** only, tests/integration/** excluded, demonstrated via probe test. Full run still blocked at the TS-checker by a pre-existing schema bug — `result_storage_path` missing from `transformations` — deferred to its own change; baseline junk-dir + model-type errors fixed here)
+- [x] 1.5 `npx stryker run` completes without executing integration tests (scoping proven: Stryker now uses vitest.config.unit.ts → src/** only, tests/integration/** excluded, demonstrated via probe test. Full run still blocked at the TS-checker by a pre-existing schema bug — `result_storage_path` missing from `transformations` — deferred to its own change; baseline junk-dir + model-type errors fixed here) — 82d8e55
 
 ### Phase 2: Risk #5 guest test + real scoring conversion
 
 #### Automated
 
-- [ ] 2.1 Guest test passes against real OpenRouter
-- [ ] 2.2 Scoring integration test passes against real OpenRouter, asserting invariants
-- [ ] 2.3 Surviving retry/error unit cases still pass (mocked failures)
-- [ ] 2.4 Tests run without any Supabase or `astro:env/server` mock
+- [x] 2.1 Guest test passes against real OpenRouter
+- [x] 2.2 Scoring integration test passes against real OpenRouter, asserting invariants
+- [x] 2.3 Surviving retry/error unit cases still pass (mocked failures)
+- [x] 2.4 Tests run without any Supabase or `astro:env/server` mock
 
 #### Manual
 
-- [ ] 2.5 OpenRouter spend for one run is negligible
-- [ ] 2.6 `OPENROUTER_API_KEY` resolution from real env confirmed
+- [x] 2.5 OpenRouter spend for one run is negligible
+- [x] 2.6 `OPENROUTER_API_KEY` resolution from real env confirmed
 
 ### Phase 3: Supabase test fixtures
 

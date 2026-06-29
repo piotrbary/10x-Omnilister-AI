@@ -113,6 +113,7 @@ async function _callGptVision(
             },
           ],
           response_format: { type: "json_schema", json_schema: GPT_JSON_SCHEMA },
+          max_tokens: aiConfig.maxOutputTokens,
         }),
       });
 

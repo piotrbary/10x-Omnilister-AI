@@ -67,6 +67,14 @@ export const aiConfig = {
   /** Maximum retries on transient API errors before surfacing to user. */
   maxRetries: 2,
 
+  /**
+   * Cap on completion tokens per OpenRouter chat request. Bounds the upfront
+   * credit reservation (OpenRouter pre-authorizes the model's full output ceiling
+   * otherwise) and the per-call cost. The vision JSON score and the enhanced
+   * prompt are both well under this; image output is billed separately.
+   */
+  maxOutputTokens: 1024,
+
   /** OpenRouter model ID for GPT-4o Vision used in photo quality scoring (S-02). */
   visionModel: "openai/gpt-4o",
 

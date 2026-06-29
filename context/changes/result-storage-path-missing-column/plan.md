@@ -205,12 +205,12 @@ None — DDL is already applied in prod; the repo file is a no-op there.
 
 #### Automated
 
-- [x] 1.1 Migration file exists: `supabase/migrations/20260626135427_add_result_storage_path.sql`
-- [x] 1.2 Generated types include `result_storage_path` in `src/types/database.generated.ts`
-- [x] 1.3 Typecheck passes (`npm run typecheck`), TS2322/TS2339 cleared
-- [x] 1.4 Stryker dry-run compiles (`npx stryker run` past the TS-checker dry-run)
+- [x] 1.1 Migration file exists: `supabase/migrations/20260626135427_add_result_storage_path.sql` — 04656c7
+- [x] 1.2 Generated types include `result_storage_path` in `src/types/database.generated.ts` — 04656c7
+- [x] 1.3 Typecheck passes (`npm run typecheck`), TS2322/TS2339 cleared — 04656c7
+- [x] 1.4 Stryker dry-run compiles (`npx stryker run` past the TS-checker dry-run) — 04656c7
 
 #### Manual
 
-- [x] 1.5 Drift sweep confirms this is the only drift (or extras noted in change.md)
-- [x] 1.6 git diff touches only the migration file and `database.generated.ts`
+- [x] 1.5 Drift sweep confirms this is the only drift (or extras noted in change.md) — 04656c7
+- [x] 1.6 git diff touches only the migration file and `database.generated.ts` — 04656c7

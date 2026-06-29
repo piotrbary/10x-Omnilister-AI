@@ -6,6 +6,9 @@ dist/
 # mutation testing HTML report output
 reports/
 
+# vendored SDK examples (kept locally, not part of this repo)
+agent-sdk-examples/
+
 # generated types
 .astro/
 

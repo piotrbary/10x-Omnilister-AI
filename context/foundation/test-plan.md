@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-06-28
+> Last updated: 2026-06-29
 
 ## 1. Strategy
 
@@ -74,7 +74,7 @@ orchestrator updates Status as artifacts appear on disk.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|------------|-----------------|----------------|------------|--------|---------------|
-| 1 | Harness + auth & access security | Bootstrap a root `vitest.config` + Supabase test fixtures; prove the registration/email-confirm gate works and the API enforces ownership and the guest boundary | #3, #4, #5 | integration | change opened | context/changes/testing-harness-auth-access-security/ |
+| 1 | Harness + auth & access security | Bootstrap a root `vitest.config` + Supabase test fixtures; prove the registration/email-confirm gate works and the API enforces ownership and the guest boundary | #3, #4, #5 | integration | complete | context/changes/testing-harness-auth-access-security/ |
 | 2 | Storage & persistence integrity | Prove uploads land on the right account with correct 100 MB accounting, and production never serves mock data | #7, #6 | integration + CI guard | not started | — |
 | 3 | Transformation correctness & score enforcement | Prove transform→image→save reaches the right account/model and that score-regression is enforced server-side (north star) | #2, #1 | integration | not started | — |
 | 4 | E2E critical flow + quality-gates wiring | One Playwright e2e on upload→transform→save (covers the "API/first-page/infra works" smoke); wire lint + typecheck + test + e2e into CI | cross-cutting | e2e, gates | not started | — |
@@ -139,10 +139,31 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.2 Adding an integration test (API route, auth, persistence)
 
-- TBD — see §3 Phase 1 (registration/email-confirm gate, cross-account
-  ownership denial, guest-endpoint boundary) and Phase 2 (upload→storage
-  persistence + 100 MB accounting). Mock only at the network edge
-  (OpenRouter / Supabase boundary); never mock internal modules.
+- **Location**: `tests/integration/**`, grouped by area
+  (`api/`, `auth/`, `transformations/`).
+- **Naming**: `<area>.test.ts` (e.g. `api/photos-ownership.test.ts`,
+  `auth/registration-gate.test.ts`).
+- **Reference test**: `tests/integration/api/photos-ownership.test.ts`
+  (two real users, real RLS, the IDOR red→green case).
+- **Run locally**: start local Supabase once (`npx supabase start`), then
+  `npm test`. `supabase start` applies migrations + `supabase/seed.sql`.
+- **Real services, no mocks**: tests run against a real local Supabase and
+  real (cost-minimized) OpenRouter — no Supabase client mock, no
+  `astro:env/server` mock. The only mocks anywhere are the deliberate-failure
+  cases in `src/lib/quality-scoring.test.ts` (a real API can't be forced to 503).
+- **Fixtures**: two seeded users (A/B) in `supabase/seed.sql`
+  (`usera@/userb@test.local`, password `testpass123`). Helpers in
+  `tests/integration/setup.ts`: `signInAs("A"|"B")` returns a session-bearing
+  Supabase client; `cookieHeaderFor("A"|"B")` mints a real `@supabase/ssr` auth
+  cookie to replay as a request `Cookie` header (so route/middleware handlers
+  run under that user's JWT with RLS active); `uniqueId(prefix)` for collision-
+  free per-test rows. Each test owns setup → action → assertion → cleanup.
+- **Env**: `.env.test` points at local Supabase (committed; local publishable
+  key, not a secret); `.env` supplies `OPENROUTER_API_KEY`; `.env.test.remote`
+  documents the remote override (copy to gitignored `.env.test.local`).
+- **OpenRouter cost**: pass the minimal-cost model from `src/lib/config.ts` +
+  the smallest valid image; assert the contract (non-empty result, status),
+  never exact pixels.
 
 ### 6.3 Adding a transform / score-enforcement test
 
@@ -164,6 +185,24 @@ the relevant rollout phase ships; before that, the sub-section reads
 note here capturing anything surprising the phase taught — e.g., fixture
 locations, the shape of the Supabase test client, how the email-send
 boundary is asserted.)
+
+**Phase 1 (harness + auth & access security):**
+- The `getViteConfig` bridge resolves `astro:env/server` (and `astro:middleware`)
+  in vitest, but loading `astro.config.mjs` pulls the Cloudflare adapter's Vite
+  plugin which rejects the test env — so `vitest.config.ts` passes
+  `configFile: false` and mirrors the `astro:env` schema inline (keep in sync).
+  Stryker uses a separate `vitest.config.unit.ts` (src-only) so mutation runs
+  skip `tests/integration/**`.
+- Seeded `auth.users` need **non-null token columns** (`confirmation_token`,
+  `recovery_token`, `email_change*` = `''`) or sign-in crashes; the new GoTrue
+  also needs a matching `auth.identities` row. `enable_confirmations = false`
+  locally makes seeded/signed-up users immediately sign-in-able.
+- Handlers read the session from the request **Cookie header** (not the
+  AstroCookies object), so tests inject auth via `cookieHeaderFor` and set
+  `context.locals.user`; queries then run under real RLS — no Supabase mock.
+- The IDOR fix is asserted red→green by toggling the storage-path guard. CI
+  wiring (gate "unit+integration required after Phase 1") is deferred to the
+  lesson that owns CI/CD config per `CLAUDE.md` — gate is named, not yet wired.
 
 ## 7. What We Deliberately Don't Test
 

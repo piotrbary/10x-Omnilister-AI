@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 import { SUPABASE_URL, SUPABASE_KEY } from "astro:env/server";
 import type { Database } from "@/types/database.generated";
 
@@ -34,5 +35,30 @@ export async function signInAs(which: TestUser): Promise<SupabaseClient<Database
 }
 
 // Timestamp + random suffix so per-test rows don't collide across re-runs / parallel workers.
-export const uniqueId = (prefix = "t"): string =>
-  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+export const uniqueId = (prefix = "t"): string => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+// Builds a real auth Cookie header for a seeded user via the actual @supabase/ssr
+// encoder, so route/middleware handlers reconstruct the session from the request
+// Cookie header and run their queries under that user's JWT (RLS active). No mocks.
+export async function cookieHeaderFor(which: TestUser): Promise<string> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error("SUPABASE_URL/SUPABASE_KEY missing — is .env.test wired and Supabase running?");
+  }
+  const jar = new Map<string, string>();
+  const writer = createServerClient(SUPABASE_URL, SUPABASE_KEY, {
+    cookies: {
+      getAll: () => [...jar].map(([name, value]) => ({ name, value })),
+      setAll: (cookies) => {
+        cookies.forEach(({ name, value }) => {
+          if (value) jar.set(name, value);
+          else jar.delete(name);
+        });
+      },
+    },
+  });
+  const { email, password } = TEST_USERS[which];
+  const { error } = await writer.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(`writer sign-in as ${which} failed: ${error.message}`);
+  if (jar.size === 0) throw new Error("no auth cookies captured from ssr writer");
+  return [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
+}

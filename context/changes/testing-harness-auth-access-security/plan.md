@@ -546,9 +546,9 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Automated
 
-- [x] 4.1 IDOR test red before the guard, green after — proven: test (a) returns 201 with guard disabled, 422 with guard
-- [x] 4.2 Cross-account read returns 404; ownership tests pass — 4 tests green (422 IDOR, 201 legit, 404 cross-account, 200 empty parent-gap)
-- [x] 4.3 Typecheck + lint pass — astro check 0 errors, tsc --noEmit clean, eslint 0 errors on touched files
+- [x] 4.1 IDOR test red before the guard, green after — proven: test (a) returns 201 with guard disabled, 422 with guard — cfc615f
+- [x] 4.2 Cross-account read returns 404; ownership tests pass — 4 tests green (422 IDOR, 201 legit, 404 cross-account, 200 empty parent-gap) — cfc615f
+- [x] 4.3 Typecheck + lint pass — astro check 0 errors, tsc --noEmit clean, eslint 0 errors on touched files — cfc615f
 
 #### Manual
 
@@ -559,8 +559,8 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Automated
 
-- [ ] 5.1 Signup + middleware-gate tests pass against real Supabase
-- [ ] 5.2 Unauthenticated `/dashboard` and `/objects` both 302 to signin
+- [x] 5.1 Signup + middleware-gate tests pass against real Supabase — signup returns {ok,confirmEmail} + user sign-in-able; session-bearing request passes middleware
+- [x] 5.2 Unauthenticated `/dashboard` and `/objects` both 302 to signin — it.each covers both → 302 Location /auth/signin
 
 #### Manual
 

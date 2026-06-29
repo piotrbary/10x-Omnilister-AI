@@ -1,40 +1,15 @@
 import { describe, it, expect, afterAll } from "vitest";
 import type { APIContext } from "astro";
-import { createServerClient } from "@supabase/ssr";
-import { SUPABASE_URL, SUPABASE_KEY } from "astro:env/server";
 import { POST as confirmUpload, GET as listPhotos } from "@/pages/api/objects/[objectId]/photos/index";
 import { GET as getObject } from "@/pages/api/objects/[objectId]/index";
-import { signInAs, uniqueId, TEST_USERS, type TestUser } from "../setup";
+import { signInAs, uniqueId, cookieHeaderFor, TEST_USERS, type TestUser } from "../setup";
 
 // Risk #4 — ownership / IDOR, against real RLS with two real users.
 // (a) app-layer IDOR: A confirm-uploads a path under B's prefix → 422 (the fix)
 // (b) cross-account read: A reads B's object → 404 (RLS denial, existence hidden)
 // (c) photos-list parent gap: A lists photos of a foreign object → 200 {photos: []}
-// No mocks: the auth cookie is produced by the real @supabase/ssr writer and
-// replayed as the request Cookie header, so the handlers' queries run under the
-// signed-in user's JWT (RLS applies).
-
-// Build a real auth Cookie header for a seeded user via the actual ssr encoder.
-async function cookieHeaderFor(which: TestUser): Promise<string> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("SUPABASE_URL/KEY missing — is .env.test wired?");
-  const jar = new Map<string, string>();
-  const writer = createServerClient(SUPABASE_URL, SUPABASE_KEY, {
-    cookies: {
-      getAll: () => [...jar].map(([name, value]) => ({ name, value })),
-      setAll: (cookies) => {
-        cookies.forEach(({ name, value }) => {
-          if (value) jar.set(name, value);
-          else jar.delete(name);
-        });
-      },
-    },
-  });
-  const { email, password } = TEST_USERS[which];
-  const { error } = await writer.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(`writer sign-in as ${which} failed: ${error.message}`);
-  if (jar.size === 0) throw new Error("no auth cookies captured from ssr writer");
-  return [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
-}
+// No mocks: cookieHeaderFor mints a real @supabase/ssr auth cookie replayed as the
+// request Cookie header, so the handlers' queries run under the signed-in user's JWT.
 
 // Minimal AstroCookies stub — handlers read the session from the Cookie *header*;
 // this only absorbs any write-back (none expected: token is fresh, no refresh).

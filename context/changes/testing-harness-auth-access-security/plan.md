@@ -552,8 +552,8 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Manual
 
-- [ ] 4.4 Confirm-upload still works for a legitimate own-prefix path
-- [ ] 4.5 No regression in the upload→confirm flow via the UI
+- [x] 4.4 Confirm-upload still works for a legitimate own-prefix path — automated (a') test returns 201 (re-run green 2026-06-29)
+- [x] 4.5 No regression in the upload→confirm flow via the UI — static proof: path is server-generated in upload-url.ts:106 (`${user.id}/${objectId}/${safeName}`) and passed through by PhotoUploader.tsx:72→109, so it always satisfies the guard prefix; guard only rejects forged paths
 
 ### Phase 5: Risk #3 — registration / auth-gate test
 
@@ -564,7 +564,7 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Manual
 
-- [ ] 5.3 A freshly signed-up local user can sign in
+- [x] 5.3 A freshly signed-up local user can sign in — automated registration-gate test signs in the freshly-created user (re-run green 2026-06-29)
 
 ### Phase 6: CI gate wiring + cookbook
 
@@ -575,4 +575,4 @@ Stryker mutation loop and use unique ids for parallel safety.
 
 #### Manual
 
-- [ ] 6.3 §6.2 is specific enough to add an integration test from alone
+- [x] 6.3 §6.2 is specific enough to add an integration test from alone — verified: §6.2 specifies location, naming, reference test, run command, real-services convention, fixtures + helpers (signInAs/cookieHeaderFor/uniqueId), env wiring, and cost guidance — self-sufficient

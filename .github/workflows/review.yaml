@@ -6,6 +6,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# pull-requests:write lets the agent post its review back onto the PR.
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -27,7 +32,32 @@ jobs:
         run: npm ci
 
       - name: Run agent
-        run: npm start
+        id: review
+        # Capture the agent output instead of letting a non-zero exit abort the
+        # job — we want to post the findings as a PR comment first, then fail.
+        run: |
+          set +e
+          npm start 2>&1 | tee review-output.txt
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           DIFF_BASE: origin/${{ github.base_ref || github.event.repository.default_branch }}
+
+      - name: Post review as PR comment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## 🤖 AI Code Review"
+            echo ""
+            echo '```'
+            cat review-output.txt
+            echo '```'
+          } > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md
+
+      - name: Enforce review verdict
+        if: always()
+        # A critical finding (surviving escalation) makes the agent exit 1.
+        run: exit ${{ steps.review.outputs.exit }}

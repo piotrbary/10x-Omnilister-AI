@@ -32,6 +32,17 @@ cech, których produkt nie posiada).
 5. **Globalna biblioteka stylów** — dobre prompty publikujesz pod nazwą, dostępne dla
    wszystkich użytkowników.
 
+## Przykłady transformacji
+
+**Samochód** — styl *Showroom*. Ocena przed: **3.5** → po: **6.6** (tło 2.0 → 7.0,
+oświetlenie 4.0 → 8.0), przy zachowaniu wszystkich cech pojazdu.
+
+![Transformacja samochodu — ocena przed/po](./public/omnilister-transform-car.jpg)
+
+**Nieruchomość** — styl *Homestage*: profesjonalne uprzątnięcie i doświetlenie wnętrza.
+
+![Transformacja mieszkania — homestaging](./public/omnilister-transform-apartment.jpg)
+
 ## Wynik analizy MVP (10xBuilder)
 
 Projekt został przeanalizowany względem minimalnych wymagań technicznych bloku 10xBuilder.

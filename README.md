@@ -201,6 +201,10 @@ w pętli i potencjalne dzielenie przez zero, z konkretną rekomendacją naprawy:
 
 ![Lista uruchomień CI i recenzji](./champion_badge_requirements_CICD/LIST_OF_CODEREVEIWS_ADN_TEST_ci.jpg)
 
+## Architekt — raport
+
+Raport wymagany na Badge Architekt: [context/architect-report.md](./context/architect-report.md)
+
 ## License
 
 © 2026 Piotr Barylak. Wszystkie prawa zastrzeżone.

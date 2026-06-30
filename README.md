@@ -203,4 +203,4 @@ w pętli i potencjalne dzielenie przez zero, z konkretną rekomendacją naprawy:
 
 ## License
 
-MIT
+© 2026 Piotr Barylak. Wszystkie prawa zastrzeżone.

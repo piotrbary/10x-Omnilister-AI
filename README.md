@@ -180,6 +180,27 @@ npm run deploy
 Ustaw `SUPABASE_URL`, `SUPABASE_KEY` i `OPENROUTER_API_KEY` jako sekrety w Cloudflare
 (`npx wrangler secret put <NAME>`).
 
+## CI/CD — AI Code Review (10xChampion)
+
+Repozytorium ma trzy workflowy GitHub Actions: **Tests**, **CI** i **AI Code Review**.
+Najciekawszy jest własny reviewer (`packages/code-reviewer`): na każdym pull requeście
+analizuje diff modelem AI i **publikuje recenzję jako komentarz w PR** — z eskalacją
+(`gpt-4o-mini` → re-review `gpt-4o`) i poziomami ważności (`critical` / `major` / `minor`).
+
+**Recenzja AI publikowana automatycznie w komentarzu PR** — wykrywa np. off-by-one
+w pętli i potencjalne dzielenie przez zero, z konkretną rekomendacją naprawy:
+
+![AI Code Review jako komentarz w PR](./champion_badge_requirements_CICD/champion_CI_CD_code_review_pr_comment.jpg)
+
+**Log agenta recenzującego** — diff dzielony na chunki, każdy oceniany osobno
+(`Approved: true/false` + lista uwag z numerami linii):
+
+![Log uruchomienia agenta AI Code Review](./champion_badge_requirements_CICD/code_review_run_agent.jpg)
+
+**Historia uruchomień workflow** (Tests / CI / AI Code Review) na PR-ach i `main`:
+
+![Lista uruchomień CI i recenzji](./champion_badge_requirements_CICD/LIST_OF_CODEREVEIWS_ADN_TEST_ci.jpg)
+
 ## License
 
 MIT

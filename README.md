@@ -2,7 +2,7 @@
 
 > AI, które wie, że to konkretny samochód na Otomoto albo mieszkanie na Otodom — i poprawia zdjęcia pod cel sprzedażowy, a nie tylko pod efekt wizualny.
 
-![Omnilister AI — Studio (edytor AI)](./public/omnilister-home.png)
+![Omnilister AI — Studio: ocena przed/po transformacji](./public/omnilister-home.jpg)
 
 🔗 **Live:** [omnilister-ai.peter-be-cloud.workers.dev](https://omnilister-ai.peter-be-cloud.workers.dev)
 
